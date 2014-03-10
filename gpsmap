@@ -80,20 +80,21 @@ class Main(object):
         # create actions
         action_group = gtk.ActionGroup('GPSmap')
         action_group.add_actions(
-            [('file.quit',        gtk.STOCK_QUIT, '_Quit me!',        None,         'Quit the Program', self.quit),
-             ('file',             None,           '_File'),
-             ('file.new',         None,           '_New map',         '<Control>n', None,               self.new),
-             ('file.open',        None,           '_Open map',        '<Control>o', None,               self.open),
-             ('file.save',        None,           '_Save map',        '<Control>s', None,               self.save),
-             ('file.save_route',  None,           '_Save KML route',  None,         None,               self.save_route),
-             ('config',           None,           '_Config'),
-             ('config.map_load',  None,           '_Load map image',  None,         None,               self.map_load_dialog),
-             ('refp',             None,           '_Reference points'),
-             ('refp.set_ref_A',   None,           'Set reference _A', None,         None,               self.set_ref_A),
-             ('refp.set_ref_H',   None,           'Set reference _H', None,         None,               self.set_ref_H),
-             ('refp.set_ref_V',   None,           'Set reference _V', None,         None,               self.set_ref_V),
-             ('help',             None,           '_Help'),
-             ('help.about',       None,           '_About',           None,         None,               self.about)])
+            [('file.quit',          gtk.STOCK_QUIT, '_Quit me!',        None,         'Quit the Program', self.quit),
+             ('file',               None,           '_File'),
+             ('file.new',           None,           '_New map',         '<Control>n', None,               self.new),
+             ('file.open',          None,           '_Open map',        '<Control>o', None,               self.open),
+             ('file.save',          None,           '_Save map',        '<Control>s', None,               self.save),
+             ('file.save_route',    None,           '_Save KML route',  None,         None,               self.save_route),
+             ('config',             None,           '_Config'),
+             ('config.map_load',    None,           '_Load map image',  None,         None,               self.map_load_dialog),
+             ('config.route_unset', None,           '_Reset route',     None,         None,               self.route_unset),
+             ('refp',               None,           '_Reference points'),
+             ('refp.set_ref_A',     None,           'Set reference _A', None,         None,               self.set_ref_A),
+             ('refp.set_ref_H',     None,           'Set reference _H', None,         None,               self.set_ref_H),
+             ('refp.set_ref_V',     None,           'Set reference _V', None,         None,               self.set_ref_V),
+             ('help',               None,           '_Help'),
+             ('help.about',         None,           '_About',           None,         None,               self.about)])
         ui_manager.insert_action_group(action_group, 0)
 
         # create menu and accelerator group
@@ -294,6 +295,12 @@ class Main(object):
     # -------------------------------------------------------------------------
     # actions
     # -------------------------------------------------------------------------
+
+    def route_unset(self, action, data = None):
+        if self.mc is None or self.mc.route is None:
+                self.error("Cannot set ref points before loading a map.")
+        self.mc.route_unset()
+        self.mw.redraw()
 
     def set_ref(self, pn, x, y, la, lo):
         self.status("Point %s (%d, %d) at coordinates (%f, %f) (%s)." % (pn, x, y, la, lo, GPS.dec2sex(la, lo)))

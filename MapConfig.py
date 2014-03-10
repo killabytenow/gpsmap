@@ -194,9 +194,7 @@ class MapConfig(object):
     def load(self, configfile):
         self.filename = configfile
         f = open(configfile, "r")
-        j = f.read()
-        logging.info("json = %s", j)
-        self.json_read(j)
+        self.json_read(f.read())
         f.close()
 
     def save(self, configfile):
@@ -204,6 +202,9 @@ class MapConfig(object):
         f = open(configfile, "w")
         f.write(self.json_write())
         f.close()
+
+    def route_unset(self):
+        self.route = []
 
     def save_route(self, routefile):
         if routefile is None or routefile == "":

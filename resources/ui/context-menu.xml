@@ -32,5 +32,6 @@
       <menuitem name="set_H" action="refp.set_ref_H" />
       <menuitem name="set_V" action="refp.set_ref_V" />
     </menu>
+    <menuitem name="route_unset" action="config.route_unset" />
   </popup>
 </ui>
