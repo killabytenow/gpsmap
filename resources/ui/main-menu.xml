@@ -1,0 +1,51 @@
+<![CDATA[
+###############################################################################
+# main-menu.xml
+#
+#   The main menu bar
+#
+# -----------------------------------------------------------------------------
+# gpsmap - A GPSD simulator based on map positions
+#   (C) 2014 Gerardo García Peña <killabytenow@gmail.com>
+#
+#   This program is free software; you can redistribute it and/or modify it
+#   under the terms of the GNU General Public License as published by the Free
+#   Software Foundation; either version 3 of the License, or (at your option)
+#   any later version.
+#
+#   This program is distributed in the hope that it will be useful, but
+#   WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+#   or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+#   for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+###############################################################################
+]]>
+<ui>
+  <menubar name="menubar">
+    <menu action="file">
+      <menuitem name="new"  action="file.new"  />
+      <menuitem name="open" action="file.open"  />
+      <menuitem name="save" action="file.save" />
+      <placeholder name="RecentFiles" />
+      <separator />
+      <menuitem name="save_route" action="file.save_route" />
+      <separator />
+      <menuitem name="quit" action="file.quit" />
+    </menu>
+    <menu action="config">
+      <menuitem name="map_load"  action="config.map_load" />
+      <menu action="refp">
+        <menuitem name="set_A" action="refp.set_ref_A" />
+        <menuitem name="set_H" action="refp.set_ref_H" />
+        <menuitem name="set_V" action="refp.set_ref_V" />
+      </menu>
+    </menu>
+    <menu name="Help" action="help">
+      <menuitem name="About" action="help.about"/>
+    </menu>
+  </menubar>
+</ui>

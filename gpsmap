@@ -1,0 +1,509 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+###############################################################################
+# gpsmap.py
+#
+#   GPSmap gpsd simulator
+#
+# -----------------------------------------------------------------------------
+# gpsmap - A GPSD simulator based on map positions
+#   (C) 2014 Gerardo García Peña <killabytenow@gmail.com>
+#
+#   This program is free software; you can redistribute it and/or modify it
+#   under the terms of the GNU General Public License as published by the Free
+#   Software Foundation; either version 3 of the License, or (at your option)
+#   any later version.
+#
+#   This program is distributed in the hope that it will be useful, but
+#   WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+#   or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+#   for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+###############################################################################
+
+import pygtk
+pygtk.require('2.0')
+import gtk
+import sys
+import logging
+import os
+import threading
+
+import GPSd
+import GPS
+import MapConfig
+import MapWidget
+import Vect
+
+gtk.gdk.threads_init()
+
+class Main(object):
+    mc             = None
+    binpath        = None
+    move_map       = None
+    select_mode    = None
+    last_press     = None
+    statusbar      = None
+    mw             = None
+    gpsdthread     = None
+    route_file     = None
+
+    __ui_xml = ''''''
+
+    def __init__(self):
+        self.mc = MapConfig.MapConfig()
+        self.select_mode = None
+        self.move_map    = False
+
+        ## BUILD INTERFACE ##
+        # create window and set some properties
+        self.binpath = os.path.dirname(sys.argv[0])
+        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.title()
+        self.window.set_border_width(3)
+
+        # "delete_event" signal (given by the WM, usually by the "close"
+        # option)
+        self.window.connect("delete_event", self.quit)
+
+        # "destroy" event (occurs when gtk_widget_destroy() is called or False
+        # is returned in "delete_event" callback)
+        self.window.connect("destroy", self.destroy)
+
+        # create the UI Manager
+        ui_manager = gtk.UIManager()
+
+        # create actions
+        action_group = gtk.ActionGroup('GPSmap')
+        action_group.add_actions(
+            [('file.quit',        gtk.STOCK_QUIT, '_Quit me!',        None,         'Quit the Program', self.quit),
+             ('file',             None,           '_File'),
+             ('file.new',         None,           '_New map',         '<Control>n', None,               self.new),
+             ('file.open',        None,           '_Open map',        '<Control>o', None,               self.open),
+             ('file.save',        None,           '_Save map',        '<Control>s', None,               self.save),
+             ('file.save_route',  None,           '_Save KML route',  None,         None,               self.save_route),
+             ('config',           None,           '_Config'),
+             ('config.map_load',  None,           '_Load map image',  None,         None,               self.map_load_dialog),
+             ('refp',             None,           '_Reference points'),
+             ('refp.set_ref_A',   None,           'Set reference _A', None,         None,               self.set_ref_A),
+             ('refp.set_ref_H',   None,           'Set reference _H', None,         None,               self.set_ref_H),
+             ('refp.set_ref_V',   None,           'Set reference _V', None,         None,               self.set_ref_V),
+             ('help',             None,           '_Help'),
+             ('help.about',       None,           '_About',           None,         None,               self.about)])
+        ui_manager.insert_action_group(action_group, 0)
+
+        # create menu and accelerator group
+        ui_manager.add_ui_from_file("%s/resources/ui/main-menu.xml" % self.binpath)
+        ui_manager.add_ui_from_file("%s/resources/ui/context-menu.xml" % self.binpath)
+        self.__w_mapmenu = ui_manager.get_widget("/mapmenu")
+        menubar = ui_manager.get_widget("/menubar")
+        accel_group = ui_manager.get_accel_group()
+        self.window.add_accel_group(accel_group)
+
+        self.mw = MapWidget.MapWidget(self.mc)
+
+        ## More things you need an X window for ...
+        #event_box.realize()
+        #event_box.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND1))
+
+        ## Set background color to green
+        #event_box.modify_bg(gtk.STATE_NORMAL,
+        #event_box.get_colormap().alloc_color("green"))
+
+        self.__w_sw = gtk.ScrolledWindow()
+        self.__w_sw.add_with_viewport(self.mw)
+
+        self.statusbar = gtk.Statusbar()
+
+        vbox = gtk.VBox(False, 1)
+        vbox.pack_start(menubar, False, True, 0)
+        vbox.pack_start(self.__w_sw, True, True, 0)
+        vbox.pack_end(self.statusbar, False, True, 0)
+        self.window.add(vbox)
+
+        # show the main window and widgets
+        menubar.show()
+        self.statusbar.show()
+        self.__w_sw.show()
+        self.mw.show()
+        vbox.show()
+        self.window.show()
+
+        # events
+        self.mw.add_events(gtk.gdk.EXPOSURE_MASK
+                              | gtk.gdk.LEAVE_NOTIFY_MASK
+                              | gtk.gdk.BUTTON_PRESS_MASK
+                              | gtk.gdk.BUTTON_RELEASE_MASK
+                              | gtk.gdk.POINTER_MOTION_MASK
+                              | gtk.gdk.POINTER_MOTION_HINT_MASK)
+        self.mw.connect("button_press_event",   self.map_button_press)
+        self.mw.connect("button_release_event", self.map_button_release)
+        self.mw.connect("motion-notify-event",  self.map_motion_notify)
+        self.window.connect("key-press-event",      self.map_key_press)
+        self.window.connect("key-release-event",    self.map_key_release)
+
+        # say hello
+        self.status("GPSmap alpha started")
+
+    # -------------------------------------------------------------------------
+    # manage window properties
+    # -------------------------------------------------------------------------
+
+    def title(self, fname = None):
+        t = "gpsmap"
+        if fname is not None and fname != "":
+            t = "%s [%s]" % (t, fname)
+        self.window.set_title(t)
+        return t
+
+    def status(self, msg = None):
+        if self.statusbar is not None:
+            cx = self.statusbar.get_context_id("status")
+            if msg is not None and msg != "":
+                self.statusbar.push(cx, msg)
+            else:
+                self.statusbar.pop(cx)
+        if msg is not None and msg != "":
+            logging.info("STATUS: %s" % msg)
+
+
+    def responseToDialog(self, entry, dialog, response):
+        dialog.response(response)
+
+    def getText(self, title, msg, label):
+        #base this on a message dialog
+        dialog = gtk.MessageDialog(
+                            None,
+                            gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+                            gtk.MESSAGE_QUESTION,
+                            gtk.BUTTONS_OK,
+                            None)
+        dialog.set_markup(title)
+
+        # fill dialog
+        entry = gtk.Entry()
+        entry.connect("activate", self.responseToDialog, dialog, gtk.RESPONSE_OK)
+        hbox = gtk.HBox()
+        hbox.pack_start(gtk.Label("%s:" % label), False, 5, 5)
+        hbox.pack_end(entry)
+        if msg is not None:
+            dialog.format_secondary_markup(msg)
+        dialog.vbox.pack_end(hbox, True, True, 0)
+        dialog.show_all()
+        #go go go
+        dialog.run()
+        text = entry.get_text()
+        dialog.destroy()
+        return text
+
+    # -------------------------------------------------------------------------
+    # dialogs
+    # -------------------------------------------------------------------------
+
+    def error(self, m):
+        logging.error(m)
+        m = gtk.MessageDialog(parent=None,
+                              flags=gtk.DIALOG_MODAL,
+                              type=gtk.MESSAGE_ERROR,
+                              buttons=gtk.BUTTONS_CLOSE,
+                              message_format=m)
+        m.run()
+        m.destroy()
+
+    # -------------------------------------------------------------------------
+    # events
+    # -------------------------------------------------------------------------
+
+    def destroy(self, widget, data=None):
+        gtk.main_quit()
+
+    def set_curr_pos(self, x, y):
+        p = self.mc.route_add(x, y)
+        self.mw.redraw()
+        if self.gpsdthread is not None:
+            self.gpsdthread.curr_pos = p
+        self.status("Set current position to (%d, %d) at (%s)" \
+                    % (x, y, GPS.dec2sex(p[0], p[1]) if p is not None else "unknown"))
+
+    def map_button_press(self, widget, event=None):
+        if event.button == 1:
+            if self.select_mode is not None:
+                self.set_ref_dialog(self.select_mode, event.x, event.y)
+                self.select_mode = None
+                self.mw.select_mode(None)
+            else:
+                self.move_map   = True
+                self.last_press = [ event.x, event.y ]
+
+        if event.button == 2:
+            #self.status("(%d, %d)" % (event.x, event.y))
+            self.set_curr_pos(event.x, event.y)
+
+        if event.type == gtk.gdk.BUTTON_PRESS and event.button == 3:
+            #make widget popup
+            self.last_press = [ event.x, event.y ]
+            self.__w_mapmenu.popup(None, None, None, event.button, event.time)
+
+    def map_button_release(self, widget, event=None):
+        if event.button == 1:
+            self.move_map   = False
+            self.last_press = None
+
+    def map_motion_notify(self, widget, event=None):
+        #logging.info("polla (%s, %s, %s)" % (self, widget, event))
+        x, y = self.window.get_pointer()
+        if self.move_map:
+            if self.last_press is None:
+                self.last_press = [ event.x, event.y ]
+            ha = self.__w_sw.get_hadjustment()
+            va = self.__w_sw.get_vadjustment()
+            cp = [
+                ha.get_value() - (event.x - self.last_press[0]),
+                va.get_value() - (event.y - self.last_press[1])
+            ]
+            if cp[0] < ha.get_lower(): cp[0] = 0
+            if cp[0] > ha.get_upper() - ha.get_page_size(): cp[0] = ha.get_upper() - ha.get_page_size()
+            if cp[1] < va.get_lower(): cp[1] = 0
+            if cp[1] > va.get_upper() - va.get_page_size(): cp[1] = va.get_upper() - va.get_page_size()
+            ha.set_value(cp[0])
+            va.set_value(cp[1])
+
+        if self.select_mode is not None:
+            if self.select_mode == "A":
+                self.mw.select_mode("A", event.x, event.y)
+            if self.select_mode == "H":
+                self.mw.select_mode("H", event.x, self.mc.A[0][1])
+            if self.select_mode == "V":
+                self.mw.select_mode("V", self.mc.A[0][0], event.y)
+
+    def map_key_press(self, widget, event=None):
+        if event.keyval == 32 and not self.move_map:
+            #logging.info("polla (%s, %s, %s)" % (self, widget, event))
+            self.move_map   = True
+            self.last_press = None
+
+    def map_key_release(self, widget, event=None):
+        if event.keyval == 32:
+            self.move_map   = False
+            self.last_press = None
+
+    # -------------------------------------------------------------------------
+    # actions
+    # -------------------------------------------------------------------------
+
+    def set_ref(self, pn, x, y, la, lo):
+        self.status("Point %s (%d, %d) at coordinates (%f, %f) (%s)." % (pn, x, y, la, lo, GPS.dec2sex(la, lo)))
+        if self.mc is None or self.mc.imgpath is None:
+                self.error("Cannot set ref points before loading a map.")
+        if pn == "H" or pn == "V":
+            if self.mc.A is None:
+                self.error("Cannot set ref %s before setting reference A." % pn)
+                return
+            if pn == "H": y = self.mc.A[0][1]
+            if pn == "V": x = self.mc.A[0][0]
+        if pn == "A":
+            self.mc.unset_ref("H")
+            self.mc.unset_ref("V")
+        self.mc.set_ref(pn, x, y, la, lo)
+        self.mw.redraw()
+
+    def set_ref_dialog(self, n, x, y):
+        # get coords
+        (a, l) = GPS.sex2dec(
+                    unicode(self.getText(
+                        "Set reference coordinate %s" % n,
+                        "at position (%d, %d)" % (x, y),
+                        "Coordinate"), "utf-8"))
+        if a is None:
+            self.status("Bad coordinates specified.")
+            self.mw.redraw()
+            return
+
+        # store in the 'ref_points' structure
+        self.set_ref(n, x, y, a, l)
+
+    def set_select_ref(self, ref):
+        if self.mc is None or self.mc.imgpath is None:
+                self.error("Cannot set ref points before loading a map.")
+                return
+        if ref == "H" or ref == "V":
+            if self.mc.A is None:
+                self.error("Cannot set ref %s before setting reference A." % ref)
+                return
+        self.select_mode = ref
+
+    def set_ref_A(self, action = None, data = None):
+        self.set_select_ref("A")
+
+    def set_ref_H(self, action = None, data = None):
+        self.set_select_ref("H")
+
+    def set_ref_V(self, action = None, data = None):
+        self.set_select_ref("V")
+
+    def new(self, action, data = None):
+        logging.info("New map")
+        self.mc = MapConfig.MapConfig()
+        self.mw.mc = self.mc
+        self.mw.redraw()
+
+    def map_load(self, filename):
+        self.mc.map_load(filename)
+        self.status("Image '%s' loaded." % filename)
+
+    def map_load_dialog(self, action, data = None):
+        # open file chooser
+        fc = gtk.FileChooserDialog(
+               action=gtk.FILE_CHOOSER_ACTION_OPEN,
+               buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+
+        formats = [ "jpg", "png", "gif" ]
+        filter = gtk.FileFilter()
+        filter.set_name("Images")
+        for f in formats:
+            filter.add_pattern("*.%s" % f)
+        fc.add_filter(filter)
+        for f in formats:
+            filter = gtk.FileFilter()
+            filter.set_name("%s image" % f)
+            filter.add_pattern("*.%s" % f)
+            fc.add_filter(filter)
+
+        r = fc.run()
+
+        # fetch filename
+        filename = None
+        if r == gtk.RESPONSE_OK:
+            filename = fc.get_filename()
+        else:
+            logging.info("File chooser window puf")
+
+        fc.destroy()
+
+        # load map
+        if filename is None:
+            logging.info("File choosed is puf puf")
+            return None
+
+        self.map_load(filename)
+
+    def open(self, action, data = None):
+        # open save file chooser
+        fc = gtk.FileChooserDialog(
+               action=gtk.FILE_CHOOSER_ACTION_OPEN,
+               buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+        filter = gtk.FileFilter()
+        filter.set_name("gpsmap file")
+        filter.add_pattern("*.gpsmap")
+        fc.add_filter(filter)
+        r = fc.run()
+
+        # fetch filename
+        filename = None
+        if r == gtk.RESPONSE_OK:
+            filename = fc.get_filename()
+        else:
+            logging.info("File chooser window puf")
+        fc.destroy()
+        if filename is None:
+            logging.info("File choosed is puf puf")
+            return None
+
+        # load map
+        self.mc.load(filename)
+        self.mw.redraw()
+
+    def save_as(self, action, data = None):
+        # open save file chooser
+        fc = gtk.FileChooserDialog(
+               action=gtk.FILE_CHOOSER_ACTION_SAVE,
+               buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+        filter = gtk.FileFilter()
+        filter.set_name("gpsmap file")
+        filter.add_pattern("*.gpsmap")
+        fc.add_filter(filter)
+        r = fc.run()
+
+        # fetch filename
+        filename = None
+        if r == gtk.RESPONSE_OK:
+            filename = fc.get_filename()
+        else:
+            logging.info("File chooser window puf")
+        fc.destroy()
+        if filename is None:
+            logging.info("File choosed is puf puf")
+            return None
+
+        # load map
+        self.mc.save(filename)
+
+    def save(self, action, data = None):
+        logging.info("SAVE %s" % action)
+        if self.mc.filename is None:
+            return self.save_as(action, data)
+        self.mc.save(self.mc.filename)
+
+    def save_route(self, action, data = None):
+        # open save file chooser
+        fc = gtk.FileChooserDialog(
+               action=gtk.FILE_CHOOSER_ACTION_SAVE,
+               buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+        filter = gtk.FileFilter()
+        filter.set_name("KML file")
+        filter.add_pattern("*.kml")
+        fc.add_filter(filter)
+        r = fc.run()
+
+        # fetch filename
+        filename = None
+        if r == gtk.RESPONSE_OK:
+            filename = fc.get_filename()
+        else:
+            logging.info("File chooser window puf")
+        fc.destroy()
+        if filename is None:
+            logging.info("File choosed is puf puf")
+            return None
+
+        # load map
+        self.mc.save_route(filename)
+
+    def start(self):
+        self.gpsdthread = GPSd.GPSdThread()
+        self.gpsdthread.start()
+        gtk.main()
+        self.gpsdthread.quit = True
+        logging.info("fin")
+
+
+    def quit(self, action, data = None):
+        self.gpsdthread.quit = True
+        logging.info("QUIT %s" % action)
+        # emit the "destroy" signal returning FALSE
+        gtk.main_quit()
+
+    def about(self, action):
+        logging.info("ABOUT %s" % action)
+        about = gtk.AboutDialog()
+        about.set_program_name("GPSmap Emulator")
+        about.set_version("1.0")
+        about.set_copyright("(c) 2014 Gerardo García Peña")
+        about.set_comments("GPSmap Emulator")
+        about.set_logo(gtk.gdk.pixbuf_new_from_file("resources/logo.jpg"))
+        about.run()
+        about.destroy()
+
+# start
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.info("== STARTING ===================================================================")
+
+mwindow = Main()
+mwindow.start()
+
+logging.info("== FINISHED ===================================================================")
+sys.exit(0)
