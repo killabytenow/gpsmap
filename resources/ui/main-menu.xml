@@ -45,6 +45,9 @@
       </menu>
       <menuitem name="route_unset" action="config.route_unset" />
     </menu>
+    <menu action="view">
+      <menuitem name="ref_points" action="view.ref_points" />
+    </menu>
     <menu name="Help" action="help">
       <menuitem name="About" action="help.about"/>
     </menu>

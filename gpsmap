@@ -77,24 +77,32 @@ class Main(object):
         # create the UI Manager
         ui_manager = gtk.UIManager()
 
+        self.mw = MapWidget.MapWidget(self.mc)
+
         # create actions
         action_group = gtk.ActionGroup('GPSmap')
         action_group.add_actions(
-            [('file.quit',          gtk.STOCK_QUIT, '_Quit me!',        None,         'Quit the Program', self.quit),
+            [('file.quit',          gtk.STOCK_QUIT, '_Quit me!',         None,         'Quit the Program', self.quit),
              ('file',               None,           '_File'),
-             ('file.new',           None,           '_New map',         '<Control>n', None,               self.new),
-             ('file.open',          None,           '_Open map',        '<Control>o', None,               self.open),
-             ('file.save',          None,           '_Save map',        '<Control>s', None,               self.save),
-             ('file.save_route',    None,           '_Save KML route',  None,         None,               self.save_route),
+             ('file.new',           gtk.STOCK_NEW,  '_New map',          '<Control>n', None,               self.new),
+             ('file.open',          None,           '_Open map',         '<Control>o', None,               self.open),
+             ('file.save',          None,           '_Save map',         '<Control>s', None,               self.save),
+             ('file.save_route',    None,           '_Save KML route',   None,         None,               self.save_route),
              ('config',             None,           '_Config'),
-             ('config.map_load',    None,           '_Load map image',  None,         None,               self.map_load_dialog),
-             ('config.route_unset', None,           '_Reset route',     None,         None,               self.route_unset),
+             ('config.map_load',    None,           '_Load map image',   None,         None,               self.map_load_dialog),
+             ('config.route_unset', None,           '_Reset route',      None,         None,               self.route_unset),
              ('refp',               None,           '_Reference points'),
-             ('refp.set_ref_A',     None,           'Set reference _A', None,         None,               self.set_ref_A),
-             ('refp.set_ref_H',     None,           'Set reference _H', None,         None,               self.set_ref_H),
-             ('refp.set_ref_V',     None,           'Set reference _V', None,         None,               self.set_ref_V),
+             ('refp.set_ref_A',     None,           'Set reference _A',  None,         None,               self.set_ref_A),
+             ('refp.set_ref_H',     None,           'Set reference _H',  None,         None,               self.set_ref_H),
+             ('refp.set_ref_V',     None,           'Set reference _V',  None,         None,               self.set_ref_V),
              ('help',               None,           '_Help'),
-             ('help.about',         None,           '_About',           None,         None,               self.about)])
+             ('help.about',         None,           '_About',            None,         None,               self.about),
+             ('view',               None,           '_View'),
+            ])
+        a = gtk.ToggleAction('view.ref_points', '_Reference points', None, None)
+        a.connect("toggled", self.mw.is_visible, "ref_points")
+        a.set_active(True)
+        action_group.add_action(a)
         ui_manager.insert_action_group(action_group, 0)
 
         # create menu and accelerator group
@@ -105,7 +113,6 @@ class Main(object):
         accel_group = ui_manager.get_accel_group()
         self.window.add_accel_group(accel_group)
 
-        self.mw = MapWidget.MapWidget(self.mc)
 
         ## More things you need an X window for ...
         #event_box.realize()
@@ -283,9 +290,13 @@ class Main(object):
 
     def map_key_press(self, widget, event=None):
         if event.keyval == 32 and not self.move_map:
-            #logging.info("polla (%s, %s, %s)" % (self, widget, event))
             self.move_map   = True
             self.last_press = None
+        if event.keyval == 65307:
+            self.move_map    = False
+            self.last_press  = None
+            self.select_mode = None
+            self.mw.select_mode(None)
 
     def map_key_release(self, widget, event=None):
         if event.keyval == 32:
@@ -354,8 +365,7 @@ class Main(object):
 
     def new(self, action, data = None):
         logging.info("New map")
-        self.mc = MapConfig.MapConfig()
-        self.mw.mc = self.mc
+        self.mc.reset()
         self.mw.redraw()
 
     def map_load(self, filename):

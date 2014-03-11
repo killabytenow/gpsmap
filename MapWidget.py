@@ -42,18 +42,26 @@ class MapWidget(gtk.DrawingArea):
     select_m = None
     select_x = None
     select_y = None
+    visible  = None
 
     def __init__(self, mc):
         super(MapWidget, self).__init__()
         self.mc = mc
-        select_m = None
-        select_x = None
-        select_y = None
+        self.select_m = None
+        self.select_x = None
+        self.select_y = None
+        self.visible  = { "ref_points": False }
+
+    def is_visible(self, action, element):
+        self.visible[element] = not self.visible[element]
+        self.redraw()
+        return self.visible[element]
 
     def redraw(self):
         self.alloc = self.get_allocation()
         rect = gtk.gdk.Rectangle(self.alloc.x, self.alloc.y, self.alloc.width, self.alloc.height)
-        self.window.invalidate_rect(rect, True)
+        if self.window is not None:
+            self.window.invalidate_rect(rect, True)
 
     def do_expose_event(self, event):
         if self.mc is None \
@@ -93,15 +101,16 @@ class MapWidget(gtk.DrawingArea):
             lp = p
 
         # draw reference points
-        cr.set_source_rgba(1, 0, 0, 0.6);
-        cr.set_line_width(3);
-        for p in [ self.mc.A, self.mc.H, self.mc.V ]:
-            if p is not None:
-                cr.move_to(p[0][0] - 8, p[0][1] - 8)
-                cr.line_to(p[0][0] + 8, p[0][1] + 8)
-                cr.move_to(p[0][0] - 8, p[0][1] + 8)
-                cr.line_to(p[0][0] + 8, p[0][1] - 8)
-                cr.stroke()
+        if self.visible["ref_points"]:
+            cr.set_source_rgba(1, 0, 0, 0.6);
+            cr.set_line_width(3);
+            for p in [ self.mc.A, self.mc.H, self.mc.V ]:
+                if p is not None:
+                    cr.move_to(p[0][0] - 8, p[0][1] - 8)
+                    cr.line_to(p[0][0] + 8, p[0][1] + 8)
+                    cr.move_to(p[0][0] - 8, p[0][1] + 8)
+                    cr.line_to(p[0][0] + 8, p[0][1] - 8)
+                    cr.stroke()
 
         # draw selection
         if self.select_m is not None:
@@ -127,6 +136,7 @@ class MapWidget(gtk.DrawingArea):
             self.select_x = None
             self.select_y = None
             self.select_m = None
+            self.redraw()
             return
         if mode != "H" and mode != "V" and mode != "A":
             logging.error("Bad selection mode '%s'." % mode)

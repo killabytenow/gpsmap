@@ -53,7 +53,21 @@ class MapConfig(object):
     pixbuf   = None
 
     def __init__(self):
-        self.route = [ ]
+        self.reset()
+
+    def reset(self):
+        self.route    = [ ]
+        self.filename = None
+        self.imgpath  = None
+        self.A        = None
+        self.H        = None
+        self.V        = None
+        self.route    = None
+        self.to       = None
+        self.raca     = None
+        self.dflo     = None
+        self.dfla     = None
+        self.pixbuf   = None
 
     def map_load(self, mapfile):
         logging.info("Loading map image '%s'." % mapfile)
