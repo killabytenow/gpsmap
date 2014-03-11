@@ -32,6 +32,7 @@ import sys
 import logging
 import os
 import threading
+import sys
 
 import GPSd
 import GPS
@@ -50,7 +51,6 @@ class Main(object):
     statusbar      = None
     mw             = None
     gpsdthread     = None
-    route_file     = None
 
     __ui_xml = ''''''
 
@@ -85,7 +85,7 @@ class Main(object):
             [('file.quit',          gtk.STOCK_QUIT, '_Quit me!',         None,         'Quit the Program', self.quit),
              ('file',               None,           '_File'),
              ('file.new',           gtk.STOCK_NEW,  '_New map',          '<Control>n', None,               self.new),
-             ('file.open',          None,           '_Open map',         '<Control>o', None,               self.open),
+             ('file.open',          None,           '_Open map',         '<Control>o', None,               self.open_dialog),
              ('file.save',          None,           '_Save map',         '<Control>s', None,               self.save),
              ('file.save_route',    None,           '_Save KML route',   None,         None,               self.save_route),
              ('config',             None,           '_Config'),
@@ -171,10 +171,9 @@ class Main(object):
     def status(self, msg = None):
         if self.statusbar is not None:
             cx = self.statusbar.get_context_id("status")
+            self.statusbar.pop(cx)
             if msg is not None and msg != "":
                 self.statusbar.push(cx, msg)
-            else:
-                self.statusbar.pop(cx)
         if msg is not None and msg != "":
             logging.info("STATUS: %s" % msg)
 
@@ -251,15 +250,18 @@ class Main(object):
             #self.status("(%d, %d)" % (event.x, event.y))
             self.set_curr_pos(event.x, event.y)
 
-        if event.type == gtk.gdk.BUTTON_PRESS and event.button == 3:
+        if event.button == 3:
+            self.mw.ruler_set_start(event.x, event.y)
             #make widget popup
-            self.last_press = [ event.x, event.y ]
-            self.__w_mapmenu.popup(None, None, None, event.button, event.time)
+            #self.__w_mapmenu.popup(None, None, None, event.button, event.time)
 
     def map_button_release(self, widget, event=None):
         if event.button == 1:
             self.move_map   = False
             self.last_press = None
+
+        if event.button == 3:
+            self.mw.ruler_unset()
 
     def map_motion_notify(self, widget, event=None):
         #logging.info("polla (%s, %s, %s)" % (self, widget, event))
@@ -280,6 +282,9 @@ class Main(object):
             ha.set_value(cp[0])
             va.set_value(cp[1])
 
+        if self.mw.ruler is not None:
+            self.mw.ruler_set_end(event.x, event.y)
+
         if self.select_mode is not None:
             if self.select_mode == "A":
                 self.mw.select_mode("A", event.x, event.y)
@@ -289,14 +294,18 @@ class Main(object):
                 self.mw.select_mode("V", self.mc.A[0][0], event.y)
 
     def map_key_press(self, widget, event=None):
+        logging.info("key = %d" % event.keyval)
+        #if event.keyval == 65293: # ENTER
+        #    self.set_curr_pos(event.x, event.y)
         if event.keyval == 32 and not self.move_map:
             self.move_map   = True
             self.last_press = None
-        if event.keyval == 65307:
+        if event.keyval == 65307: # ESC
             self.move_map    = False
             self.last_press  = None
             self.select_mode = None
             self.mw.select_mode(None)
+            self.status(None)
 
     def map_key_release(self, widget, event=None):
         if event.keyval == 32:
@@ -309,7 +318,7 @@ class Main(object):
 
     def route_unset(self, action, data = None):
         if self.mc is None or self.mc.route is None:
-                self.error("Cannot set ref points before loading a map.")
+                self.error("Cannot do this before loading a map.")
         self.mc.route_unset()
         self.mw.redraw()
 
@@ -352,6 +361,7 @@ class Main(object):
             if self.mc.A is None:
                 self.error("Cannot set ref %s before setting reference A." % ref)
                 return
+        self.status("Select coordinate for reference point %s. Press ESC for cancelling." % ref)
         self.select_mode = ref
 
     def set_ref_A(self, action = None, data = None):
@@ -408,7 +418,11 @@ class Main(object):
 
         self.map_load(filename)
 
-    def open(self, action, data = None):
+    def open(self, filename):
+        self.mc.load(filename)
+        self.mw.redraw()
+
+    def open_dialog(self, action, data = None):
         # open save file chooser
         fc = gtk.FileChooserDialog(
                action=gtk.FILE_CHOOSER_ACTION_OPEN,
@@ -430,9 +444,7 @@ class Main(object):
             logging.info("File choosed is puf puf")
             return None
 
-        # load map
-        self.mc.load(filename)
-        self.mw.redraw()
+        self.load(filename)
 
     def save_as(self, action, data = None):
         # open save file chooser
@@ -520,6 +532,8 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logging.info("== STARTING ===================================================================")
 
 mwindow = Main()
+if len(sys.argv) > 1:
+    mwindow.open(sys.argv[1])
 mwindow.start()
 
 logging.info("== FINISHED ===================================================================")
