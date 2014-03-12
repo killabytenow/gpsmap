@@ -67,7 +67,7 @@ def dec2sex(la, lo):
     return "%d°%d'%f\"%s, %d°%d'%f\"%s" % (lad, lam, las, lao, lod, lom, los, loo)
 
 def distance(la1, lo1, la2, lo2):
-    R = 6371 # earth radius (km)
+    R = 6371.0 # earth radius (km)
     dLat = math.radians(la2 - la1)
     dLon = math.radians(lo2 - lo1)
     la1 = math.radians(la1)
@@ -76,5 +76,5 @@ def distance(la1, lo1, la2, lo2):
     a = math.sin(dLat/2) * math.sin(dLat/2) \
       + math.sin(dLon/2) * math.sin(dLon/2) * math.cos(la1) * math.cos(la2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    return R * 1000 * c;
+    return R * 1000.0 * c;
 

@@ -32,6 +32,7 @@ import cairo
 import logging
 import math
 import GPS
+import gobject
 
 class MapWidget(gtk.DrawingArea):
     """ This class is a Drawing Area"""
@@ -39,15 +40,17 @@ class MapWidget(gtk.DrawingArea):
     __gsignals__ = {
         "expose-event": "override",
     }
-    mc       = None
-    select_m = None
-    select_x = None
-    select_y = None
-    visible  = None
-    ruler    = None
+    mc        = None
+    select_m  = None
+    select_x  = None
+    select_y  = None
+    visible   = None
+    ruler     = None
+    cp_radius = None
 
     def __init__(self, mc):
         super(MapWidget, self).__init__()
+        self.cp_radius = 0
         self.mc = mc
         self.select_m = None
         self.select_x = None
@@ -58,6 +61,7 @@ class MapWidget(gtk.DrawingArea):
             "route":      False,
             "background": 2,
         }
+        gobject.timeout_add(100, self.do_animation)
 
     def bg_visible(self, action, value):
         self.visible["background"] = value.get_current_value()
@@ -86,6 +90,26 @@ class MapWidget(gtk.DrawingArea):
         rect = gtk.gdk.Rectangle(self.alloc.x, self.alloc.y, self.alloc.width, self.alloc.height)
         if self.window is not None:
             self.window.invalidate_rect(rect, True)
+
+    def do_animation(self):
+        if self.mc is None or self.mc.curr_xy is None:
+            return True
+
+        if self.cp_radius is None or self.cp_radius > 10:
+            self.cp_radius = 0
+        else:
+            self.cp_radius = self.cp_radius + 1
+
+        self.redraw()
+        return True
+        self.alloc = self.get_allocation()
+        rect = gtk.gdk.Rectangle(
+            self.alloc.x + int(self.mc.curr_xy[0]) - 15,
+            self.alloc.y + int(self.mc.curr_xy[1]) - 15,
+            40, 40)
+        if self.window is not None:
+            self.window.invalidate_rect(rect, True)
+        return True
 
     def do_expose_event(self, event):
         if self.mc is None \
@@ -248,7 +272,21 @@ class MapWidget(gtk.DrawingArea):
                 cr.set_source_rgba(1, 1, 1, 1)
                 cr.move_to(x - width/2, y)
                 cr.show_text(distance)
-            
+                cr.stroke()
+                cr.set_dash([], 0)
+
+        # draw curr_xy
+        if self.mc.curr_xy is not None:
+            x, y = self.mc.curr_xy[0], self.mc.curr_xy[1]
+            for i in range(1, 4):
+                cr.set_line_width(5 - i)
+                cr.set_source_rgba(1, 0, 1, ((float(self.cp_radius) / 15.0)))
+                cr.arc(x, y, (float(10 - self.cp_radius) * float(i) / 4.0) * 3 + 2, 0, 2*math.pi)
+                cr.stroke()
+            cr.set_source_rgba(1, 0, 1, 1)
+            cr.arc(x, y, 2.5, 0, 2*math.pi)
+            cr.fill()
+            cr.stroke()
 
     def select_mode(self, mode, x = 0, y = 0):
         if mode is None:

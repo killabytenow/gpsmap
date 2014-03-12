@@ -25,6 +25,7 @@
 #
 ###############################################################################
 
+import gobject
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -51,6 +52,8 @@ class Main(object):
     statusbar      = None
     mw             = None
     gpsdthread     = None
+    walking        = None
+    play_action    = None
 
     __ui_xml = ''''''
 
@@ -58,6 +61,18 @@ class Main(object):
         self.mc = MapConfig.MapConfig()
         self.select_mode = None
         self.move_map    = False
+        self.walking = {
+            "walking": False,
+            "cnode":   None,
+            "tnode":   None,
+            "from":    None,
+            "to":      None,
+            "s":       None,
+            "ts":      None,
+            "pausing": False,
+            "refresh": 250,
+            }
+        gobject.timeout_add(self.walking["refresh"], self.route_walk)
 
         ## BUILD INTERFACE ##
         # create window and set some properties
@@ -82,22 +97,26 @@ class Main(object):
         # create actions
         action_group = gtk.ActionGroup('GPSmap')
         action_group.add_actions(
-            [('file.quit',          gtk.STOCK_QUIT, '_Quit me!',         None,         'Quit the Program', self.quit),
+            [('file.quit',          gtk.STOCK_QUIT, '_Quit me!',          None,         'Quit the Program', self.quit),
              ('file',               None,           '_File'),
-             ('file.new',           gtk.STOCK_NEW,  '_New map',          '<Control>n', None,               self.new),
-             ('file.open',          None,           '_Open map',         '<Control>o', None,               self.open_dialog),
-             ('file.save',          None,           '_Save map',         '<Control>s', None,               self.save),
-             ('file.save_route',    None,           '_Save KML route',   None,         None,               self.route_save_kml),
+             ('file.new',           gtk.STOCK_NEW,  '_New map',           '<Control>n', None,               self.new),
+             ('file.open',          None,           '_Open map',          '<Control>o', None,               self.open_dialog),
+             ('file.save',          None,           '_Save map',          '<Control>s', None,               self.save),
+             ('file.save_route',    None,           '_Save KML route',    None,         None,               self.route_save_kml),
              ('config',             None,           '_Config'),
-             ('config.map_load',    None,           '_Load map image',   None,         None,               self.map_load_dialog),
-             ('config.route_unset', None,           '_Reset route',      None,         None,               self.route_unset),
-             ('config.add_point',   None,           'Add _point',        None,         None,               self.set_ref_P),
-             ('refp',               None,           '_Reference points'),
-             ('refp.set_ref_A',     None,           'Set reference _A',  None,         None,               self.set_ref_A),
-             ('refp.set_ref_H',     None,           'Set reference _H',  None,         None,               self.set_ref_H),
-             ('refp.set_ref_V',     None,           'Set reference _V',  None,         None,               self.set_ref_V),
+             ('config.map_load',    None,           '_Load map image',    None,         None,               self.map_load_dialog),
+             ('config.route_unset', None,           '_Reset route',       None,         None,               self.route_unset),
+             ('config.add_point',   None,           'Add _point',         None,         None,               self.set_ref_P),
+             ('config.wspeed',      None,           'Set _walking speed', None,         None,               self.set_walk_speed_dialog),
+             ('refp',               None,           '_Reference points'), 
+             ('refp.set_ref_A',     None,           'Set reference _A',   None,         None,               self.set_ref_A),
+             ('refp.set_ref_H',     None,           'Set reference _H',   None,         None,               self.set_ref_H),
+             ('refp.set_ref_V',     None,           'Set reference _V',   None,         None,               self.set_ref_V),
+             ('anim',               None,           '_Animate'),
+             ('anim.start',         None,           '_Start',             None,         None,               self.route_walk_start),
+             ('anim.reset',         None,           '_Reset',             None,         None,               self.route_walk_reset),
              ('help',               None,           '_Help'),
-             ('help.about',         None,           '_About',            None,         None,               self.about),
+             ('help.about',         None,           '_About',             None,         None,               self.about),
              ('view',               None,           '_View'),
             ])
         action_group.add_radio_actions([
@@ -114,6 +133,14 @@ class Main(object):
             a.connect("toggled", self.mw.is_visible, ta[0])
             a.set_active(True)
             action_group.add_action(a)
+        self.play_action = gtk.ToggleAction("anim.play", "_Play", None, None)
+        self.play_action.connect("toggled", self.route_is_walking)
+        self.play_action.set_active(True)
+        action_group.add_action(self.play_action)
+        a = gtk.ToggleAction("anim.pausing", "Pause at chec_kpoints", None, None)
+        a.connect("toggled", self.route_is_pausing)
+        a.set_active(True)
+        action_group.add_action(a)
 
         ui_manager.insert_action_group(action_group, 0)
 
@@ -193,13 +220,13 @@ class Main(object):
     def responseToDialog(self, entry, dialog, response):
         dialog.response(response)
 
-    def getText(self, title, msg, label):
+    def getText(self, title, msg, label, value = None):
         #base this on a message dialog
         dialog = gtk.MessageDialog(
                             None,
                             gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
                             gtk.MESSAGE_QUESTION,
-                            gtk.BUTTONS_OK,
+                            gtk.BUTTONS_OK_CANCEL,
                             None)
         dialog.set_markup(title)
 
@@ -214,8 +241,13 @@ class Main(object):
         dialog.vbox.pack_end(hbox, True, True, 0)
         dialog.show_all()
         #go go go
-        dialog.run()
-        text = entry.get_text()
+        if value is not None:
+            entry.set_text(value)
+        r = dialog.run()
+        if r == gtk.RESPONSE_OK:
+            text = entry.get_text()
+        else:
+            text = None
         dialog.destroy()
         return text
 
@@ -240,14 +272,6 @@ class Main(object):
     def destroy(self, widget, data=None):
         gtk.main_quit()
 
-    def set_curr_pos(self, x, y):
-        p = self.mc.route_add(x, y)
-        self.mw.redraw()
-        if self.gpsdthread is not None:
-            self.gpsdthread.curr_pos = p
-        self.status("Set current position to (%d, %d) at (%s)" \
-                    % (x, y, GPS.dec2sex(p[0], p[1]) if p is not None else "unknown"))
-
     def map_button_press(self, widget, event=None):
         if event.button == 1:
             if self.select_mode is not None:
@@ -260,7 +284,7 @@ class Main(object):
 
         if event.button == 2:
             #self.status("(%d, %d)" % (event.x, event.y))
-            self.set_curr_pos(event.x, event.y)
+            self.route_add(event.x, event.y)
 
         if event.button == 3:
             self.mw.ruler_set_start(event.x, event.y)
@@ -307,8 +331,15 @@ class Main(object):
 
     def map_key_press(self, widget, event=None):
         logging.info("key = %d" % event.keyval)
-        #if event.keyval == 65293: # ENTER
-        #    self.set_curr_pos(event.x, event.y)
+        if event.keyval == 65293: # ENTER
+            if self.walking["cnode"] is None:
+                self.status("You need to start a walk - go to 'Animate' menu and press 'Start'.")
+            if self.play_action.get_active():
+                self.status("Pausing walk")
+                self.play_action.set_active(False)
+            else:
+                self.status("Unpausing walk")
+                self.play_action.set_active(True)
         if event.keyval == 32 and not self.move_map:
             self.move_map   = True
             self.last_press = None
@@ -327,6 +358,90 @@ class Main(object):
     # -------------------------------------------------------------------------
     # actions
     # -------------------------------------------------------------------------
+
+    def route_is_walking(self, action):
+        self.walking["walking"] = not self.walking["walking"]
+        if self.walking["walking"]:
+            logging.info("Walking is NOT paused")
+        else:
+            logging.info("Walking is paused")
+
+    def route_is_pausing(self, action):
+        self.walking["pausing"] = not self.walking["pausing"]
+        if self.walking["pausing"]:
+            logging.info("Stopping at checkpoints")
+        else:
+            logging.info("Never stop at checkpoints")
+
+    def route_walk(self):
+        #self.walking = {
+        #    "walking": False,
+        #    "cnode": None,
+        #    "tnode": None,
+        #    "from":  None,
+        #    "to":    None,
+        #    "s":     None,
+        #    "ts":    None,
+        #    }
+        if not self.walking["walking"] \
+        or self.walking["cnode"] is None \
+        or self.walking["tnode"] is None:
+            return True
+
+        if self.walking["cnode"] >= self.walking["tnode"]:
+            self.walking["status"] = False
+            return True
+
+        if self.walking["s"] is None:
+            self.walking["from"] = self.mc.route_point_coords(self.walking["cnode"])
+            self.walking["to"] = self.mc.route_point_coords(self.walking["cnode"] + 1)
+            d = GPS.distance(
+                    self.walking["from"][0], self.walking["from"][1],
+                    self.walking["to"][0],   self.walking["to"][1])
+            self.walking["ts"] = d / (self.mc.walk_speed / 3600)
+            self.walking["s"] = 0.0
+            logging.info("walking: %.2f meters to next point (i will need %.2f seconds)." % (d, self.walking["ts"]))
+        else:
+            self.walking["s"] = self.walking["s"] + (self.walking["refresh"] / 1000.0)
+
+        if self.walking["s"] >= self.walking["ts"]:
+            self.walking["cnode"] = self.walking["cnode"] + 1
+            self.walking["s"] = None
+            if self.walking["pausing"]:
+                self.play_action.set_active(False)
+                self.status("AT CHECKPOINT. ROUTE PAUSED. Hit Enter to start")
+            else:
+                return self.route_walk()
+        else:
+            x1, y1 = self.mc.route_point_xy(self.walking["cnode"])
+            x2, y2 = self.mc.route_point_xy(self.walking["cnode"] + 1)
+            self.set_curr_pos(
+                    float(x2 - x1) * self.walking["s"] / self.walking["ts"] + x1,
+                    float(y2 - y1) * self.walking["s"] / self.walking["ts"] + y1)
+
+        return True
+
+    def route_walk_start(self, action, data = None):
+        if len(self.mc.route) <= 0:
+            return
+        self.walking["cnode"] = 0
+        self.walking["tnode"] = len(self.mc.route) - 1
+        self.play_action.set_active(True)
+
+    def route_walk_reset(self, action, data = None):
+        self.play_action.set_active(True)
+        self.walking["cnode"] = None
+        self.walking["tnode"] = None
+
+    def set_curr_pos(self, x, y):
+        p = self.mc.set_curr_pos(x, y)
+        self.mw.redraw()
+
+    def route_add(self, x, y):
+        self.mc.route_add(x, y)
+        p = self.mc.set_curr_pos(x, y)
+        self.status("Added route point at (%d, %d) @ (%s)" \
+                    % (x, y, GPS.dec2sex(p[0], p[1]) if p is not None else "unknown"))
 
     def route_unset(self, action, data = None):
         if self.mc is None or self.mc.route is None:
@@ -353,18 +468,24 @@ class Main(object):
     def set_ref_dialog(self, n, x, y):
         # get coords
         if n != "P":
-            (a, l) = GPS.sex2dec(
-                        unicode(self.getText(
-                            "Set reference coordinate %s" % n,
-                            "at position (%d, %d)" % (x, y),
-                            "Coordinate"), "utf-8"))
-            if a is None:
-                self.status("Bad coordinates specified.")
-                self.mw.redraw()
-                return
+            c = None
+            if n == "A" and self.mc.A is not None: c = GPS.dec2sex(self.mc.A[1][1], self.mc.A[1][0])
+            if n == "V" and self.mc.V is not None: c = GPS.dec2sex(self.mc.V[1][1], self.mc.V[1][0])
+            if n == "H" and self.mc.H is not None: c = GPS.dec2sex(self.mc.H[1][1], self.mc.H[1][0])
+            r = self.getText(
+                        "Set reference coordinate %s" % n,
+                        "at position (%d, %d)" % (x, y),
+                        "Coordinate", c)
+            if r is not None:
+                (a, l) = GPS.sex2dec(unicode(r, "utf-8"))
+                if a is not None:
+                    self.set_ref(n, x, y, a, l)
+                    self.mw.redraw()
+                else:
+                    self.status("Bad coordinates specified.")
+            else:
+                self.status("Cancelled.")
 
-            # store in the 'ref_points' structure
-            self.set_ref(n, x, y, a, l)
         else:
             n = self.getText(
                     "Set a name for this point.",
@@ -373,7 +494,7 @@ class Main(object):
             if n is not None:
                 self.mc.point_add(unicode(n, "utf-8"), x, y)
             else:
-                self.status("Bad name specified.")
+                self.status("Cancelled.")
             self.mw.redraw()
 
     def set_select_ref(self, ref):
@@ -398,6 +519,18 @@ class Main(object):
 
     def set_ref_P(self, action = None, data = None):
         self.set_select_ref("P")
+
+    def set_walk_speed_dialog(self, action, data = None):
+        r = self.getText(
+                "Set walking speed.",
+                "Units are kilometers/hour",
+                "Speed",
+                str(self.mc.walk_speed / 1000.0))
+        if r is not None:
+            self.mc.walk_speed = float(r) * 1000.0
+            self.status("Walk speed set to %.2f km/h" % (self.mc.walk_speed / 1000.0))
+        else:
+            self.status("Cancelled.")
 
     def new(self, action, data = None):
         logging.info("New map")
@@ -529,7 +662,7 @@ class Main(object):
         self.mc.route_save_kml(filename)
 
     def start(self):
-        self.gpsdthread = GPSd.GPSdThread()
+        self.gpsdthread = GPSd.GPSdThread(self.mc)
         self.gpsdthread.start()
         gtk.main()
         self.gpsdthread.quit = True

@@ -38,11 +38,11 @@ class GPSdThread(threading.Thread):
     port = 2947
     quit = False
     time_started = None
-    curr_pos = None
 
-    def __init__(self):
+    def __init__(self, mc):
         super(GPSdThread, self).__init__()
         self.quit = False
+        self.mc = mc
         self.time_started = time.gmtime()
 
     def get_time(self, t = None):
@@ -76,7 +76,6 @@ class GPSdThread(threading.Thread):
             })
 
     def get_cmd_TPV(self):
-        global curr_pos
         return "%s\r\n" % json.dumps({
                 "class"  : "TPV",
                 "tag"    : "RMC",
@@ -84,8 +83,8 @@ class GPSdThread(threading.Thread):
                 "mode"   : 3,
                 "time"   : self.get_time(),
                 "ept"    : 0.005,
-                "lat"    : self.curr_pos[0],
-                "lon"    : self.curr_pos[1],
+                "lat"    : self.mc.curr_pos[0],
+                "lon"    : self.mc.curr_pos[1],
                 "alt"    : 0,
                 "epx"    : 10.000, # longitude error estimated in meters
                 "epy"    : 10.000, # latitude error estimate in meters
@@ -162,7 +161,7 @@ class GPSdThread(threading.Thread):
                             read_list.remove(s)
                             write_list.remove(s)
             else:
-                if self.curr_pos is not None:
+                if self.mc.curr_pos is not None:
                     for s in write_list:
                         s.send(self.get_cmd_GST() + self.get_cmd_TPV())
 

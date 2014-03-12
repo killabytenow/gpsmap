@@ -38,13 +38,14 @@ import Vect
 
 class MapConfig(object):
     # config
-    filename = None
-    imgpath  = None
-    A        = None
-    H        = None
-    V        = None
-    route    = None
-    points   = None
+    filename   = None
+    imgpath    = None
+    A          = None
+    H          = None
+    V          = None
+    route      = None
+    points     = None
+    walk_speed = None
 
     # calculated properties
     to       = None
@@ -52,6 +53,8 @@ class MapConfig(object):
     dflo     = None
     dfla     = None
     pixbuf   = None
+    curr_pos = None
+    curr_xy  = None
 
     def __init__(self):
         self.reset()
@@ -70,8 +73,11 @@ class MapConfig(object):
         self.dflo     = None
         self.dfla     = None
         self.pixbuf   = None
+        self.walk_speed = 4000  # humans with laptop walk at 4km/h
 
     def json_read(self, config):
+        self.reset()
+
         j = json.loads(config)
 
         # load img config
@@ -79,6 +85,10 @@ class MapConfig(object):
             self.map_load(j["imgpath"])
         else:
             self.map_unset()
+
+        # walk speed
+        if "walk_speed" in j:
+            self.walk_speed = j["walk_speed"]
 
         # load reference points
         if j["A"] is not None:
@@ -110,6 +120,7 @@ class MapConfig(object):
             "V": { "coord": GPS.dec2sex(self.V[1][1], self.V[1][0]), "xy": self.V[0] }
                  if self.V is not None else None,
             "route":   self.route,
+            "walk_speed": self.walk_speed,
         }, indent = 4)
 
     def map_load(self, mapfile):
@@ -205,10 +216,19 @@ class MapConfig(object):
 
         return [v[1], v[0]]
 
+    def route_point_xy(self, n):
+        return (self.route[n][0], self.route[n][1])
+
+    def route_point_coords(self, n):
+        return self.pixel2coords(self.route[n][0], self.route[n][1])
+
+    def set_curr_pos(self, x, y):
+        self.curr_xy = [x, y]
+        self.curr_pos = self.pixel2coords(x, y)
+        return self.curr_pos
+
     def route_add(self, x, y):
-        p = self.pixel2coords(x, y)
         self.route.append([x, y])
-        return p
 
     def load(self, configfile):
         self.filename = configfile
