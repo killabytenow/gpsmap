@@ -87,10 +87,11 @@ class Main(object):
              ('file.new',           gtk.STOCK_NEW,  '_New map',          '<Control>n', None,               self.new),
              ('file.open',          None,           '_Open map',         '<Control>o', None,               self.open_dialog),
              ('file.save',          None,           '_Save map',         '<Control>s', None,               self.save),
-             ('file.save_route',    None,           '_Save KML route',   None,         None,               self.save_route),
+             ('file.save_route',    None,           '_Save KML route',   None,         None,               self.route_save_kml),
              ('config',             None,           '_Config'),
              ('config.map_load',    None,           '_Load map image',   None,         None,               self.map_load_dialog),
              ('config.route_unset', None,           '_Reset route',      None,         None,               self.route_unset),
+             ('config.add_point',   None,           'Add _point',        None,         None,               self.set_ref_P),
              ('refp',               None,           '_Reference points'),
              ('refp.set_ref_A',     None,           'Set reference _A',  None,         None,               self.set_ref_A),
              ('refp.set_ref_H',     None,           'Set reference _H',  None,         None,               self.set_ref_H),
@@ -502,7 +503,7 @@ class Main(object):
             return self.save_as(action, data)
         self.mc.save(self.mc.filename)
 
-    def save_route(self, action, data = None):
+    def route_save_kml(self, action, data = None):
         # open save file chooser
         fc = gtk.FileChooserDialog(
                action=gtk.FILE_CHOOSER_ACTION_SAVE,
@@ -525,7 +526,7 @@ class Main(object):
             return None
 
         # load map
-        self.mc.save_route(filename)
+        self.mc.route_save_kml(filename)
 
     def start(self):
         self.gpsdthread = GPSd.GPSdThread()

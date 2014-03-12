@@ -44,6 +44,7 @@
         <menuitem name="set_V" action="refp.set_ref_V" />
       </menu>
       <menuitem name="route_unset" action="config.route_unset" />
+      <menuitem name="add_point"   action="config.add_point"   />
     </menu>
     <menu action="view">
       <menuitem name="ref_points" action="view.ref_points" />

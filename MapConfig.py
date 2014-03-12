@@ -71,6 +71,47 @@ class MapConfig(object):
         self.dfla     = None
         self.pixbuf   = None
 
+    def json_read(self, config):
+        j = json.loads(config)
+
+        # load img config
+        if j["imgpath"] is not None:
+            self.map_load(j["imgpath"])
+        else:
+            self.map_unset()
+
+        # load reference points
+        if j["A"] is not None:
+            la, lo = GPS.sex2dec(j["A"]["coord"])
+            self.set_ref("A", j["A"]["xy"][0], j["A"]["xy"][1], la, lo)
+        else:
+            self.unset_ref("A")
+        if j["H"] is not None:
+            la, lo = GPS.sex2dec(j["H"]["coord"])
+            self.set_ref("H", j["H"]["xy"][0], j["H"]["xy"][1], la, lo)
+        else:
+            self.unset_ref("H")
+        if j["V"] is not None:
+            la, lo = GPS.sex2dec(j["V"]["coord"])
+            self.set_ref("V", j["V"]["xy"][0], j["V"]["xy"][1], la, lo)
+        else:
+            self.unset_ref("V")
+
+        # load last route
+        self.route = j["route"]
+
+    def json_write(self):
+        return json.dumps({
+            "imgpath": self.imgpath,
+            "A": { "coord": GPS.dec2sex(self.A[1][1], self.A[1][0]), "xy": self.A[0] }
+                 if self.A is not None else None,
+            "H": { "coord": GPS.dec2sex(self.H[1][1], self.H[1][0]), "xy": self.H[0] }
+                 if self.H is not None else None,
+            "V": { "coord": GPS.dec2sex(self.V[1][1], self.V[1][0]), "xy": self.V[0] }
+                 if self.V is not None else None,
+            "route":   self.route,
+        }, indent = 4)
+
     def map_load(self, mapfile):
         logging.info("Loading map image '%s'." % mapfile)
         self.imgpath = mapfile
@@ -84,7 +125,7 @@ class MapConfig(object):
         self.pixbuf = None
 
     def point_add(self, name, x, y):
-        points[name] = [ x, y ]
+        self.points[name] = [ x, y ]
 
     def unset_ref(self, pn):
         if   pn == "A": self.A = None
@@ -169,47 +210,6 @@ class MapConfig(object):
         self.route.append([x, y])
         return p
 
-    def json_read(self, config):
-        j = json.loads(config)
-
-        # load img config
-        if j["imgpath"] is not None:
-            self.map_load(j["imgpath"])
-        else:
-            self.map_unset()
-
-        # load reference points
-        if j["A"] is not None:
-            la, lo = GPS.sex2dec(j["A"]["coord"])
-            self.set_ref("A", j["A"]["xy"][0], j["A"]["xy"][1], la, lo)
-        else:
-            self.unset_ref("A")
-        if j["H"] is not None:
-            la, lo = GPS.sex2dec(j["H"]["coord"])
-            self.set_ref("H", j["H"]["xy"][0], j["H"]["xy"][1], la, lo)
-        else:
-            self.unset_ref("H")
-        if j["V"] is not None:
-            la, lo = GPS.sex2dec(j["V"]["coord"])
-            self.set_ref("V", j["V"]["xy"][0], j["V"]["xy"][1], la, lo)
-        else:
-            self.unset_ref("V")
-
-        # load last route
-        self.route = j["route"]
-
-    def json_write(self):
-        return json.dumps({
-            "imgpath": self.imgpath,
-            "A": { "coord": GPS.dec2sex(self.A[1][1], self.A[1][0]), "xy": self.A[0] }
-                 if self.A is not None else None,
-            "H": { "coord": GPS.dec2sex(self.H[1][1], self.H[1][0]), "xy": self.H[0] }
-                 if self.H is not None else None,
-            "V": { "coord": GPS.dec2sex(self.V[1][1], self.V[1][0]), "xy": self.V[0] }
-                 if self.V is not None else None,
-            "route":   self.route,
-        }, indent = 4)
-
     def load(self, configfile):
         self.filename = configfile
         f = open(configfile, "r")
@@ -225,7 +225,7 @@ class MapConfig(object):
     def route_unset(self):
         self.route = []
 
-    def save_route(self, routefile):
+    def route_save_kml(self, routefile):
         if routefile is None or routefile == "":
             self.route_file = \
                 "%s.kml" % (self.configfile if self.configfile is not None else "route")

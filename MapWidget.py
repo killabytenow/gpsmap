@@ -151,13 +151,21 @@ class MapWidget(gtk.DrawingArea):
 
         if self.visible["points"]:
             for n in self.mc.points.keys():
+                x, y = self.mc.points[n][0], self.mc.points[n][1]
                 cr.set_source_rgba(0, 0, 1, .8)
                 cr.set_line_width(2)
-                cr.arc(p[n][0], p[n][1], 4.0, 0, 2*math.pi)
+                cr.arc(x, y, 6.0, 0, 2*math.pi)
                 cr.stroke()
-                cr.arc(p[n][0], p[n][1], 2.0, 0, 2*math.pi)
+                cr.arc(x, y, 4.0, 0, 2*math.pi)
                 cr.fill()
                 cr.stroke()
+                xbearing, ybearing, width, height, xadvance, yadvance = (cr.text_extents(n))
+                cr.set_source_rgba(0, 0, 0, 1)
+                cr.move_to(x + 1 - width/2, y + 1 + height)
+                cr.show_text(n)
+                cr.set_source_rgba(1, 1, 1, 1)
+                cr.move_to(x - width/2, y + height)
+                cr.show_text(n)
 
         # draw selection
         if self.select_m is not None:
@@ -183,7 +191,15 @@ class MapWidget(gtk.DrawingArea):
                 cr.move_to(self.select_x, 0)
                 cr.line_to(self.select_x, self.mc.pixbuf.get_height())
                 cr.stroke()
-            if self.select_m != "A":
+            if self.select_m == "P":
+                cr.set_source_rgba(0, 0, 1, .4)
+                cr.set_line_width(2)
+                cr.arc(self.select_x, self.select_y, 4.0, 0, 2*math.pi)
+                cr.stroke()
+                cr.arc(self.select_x, self.select_y, 2.0, 0, 2*math.pi)
+                cr.fill()
+                cr.stroke()
+            elif self.select_m != "A":
                 cr.set_source_rgba(0, 0, 0, 1)
                 cr.set_line_width(1)
                 cr.move_to(self.select_x - 8 + 1, self.select_y - 8 + 1)
@@ -241,7 +257,7 @@ class MapWidget(gtk.DrawingArea):
             self.select_m = None
             self.redraw()
             return
-        if mode != "H" and mode != "V" and mode != "A":
+        if mode != "H" and mode != "V" and mode != "A" and mode != "P":
             logging.error("Bad selection mode '%s'." % mode)
             return
         self.select_m = mode
