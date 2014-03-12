@@ -63,3 +63,32 @@ To start a new project follow these steps:
 
    ![gpsmap screenshot](/doc/choose-ref-H-02.jpg "Reference point H set")
 
+4. Repeat this process, but this time with the verical axis setting the
+   vertical axis reference point (we call it V).
+
+   ![gpsmap screenshot](/doc/choose-ref-V-01.jpg "choosing reference point V")
+
+   Again you will get a mark on your map:
+
+   ![gpsmap screenshot](/doc/choose-ref-V-02.jpg "Reference point V set")
+
+5. Now gpsmap is fully configured. You can test that it works using the ruler
+pressing and dragging the mouse right-button over the map:
+
+   ![gpsmap screenshot](/doc/ruler.jpg "Ruler")
+
+Tracing a route
+---------------
+
+For tracing a route you only have to press the mouse middle-button. Each time
+you press this button you will add a new route point:
+
+![gpsmap screenshot](/doc/route.jpg "Adding route points")
+
+Please note that if you have running a software that listens to the GPSD port,
+it will receive the coordinates of the point you a pressing. You will know
+which coordinates are being sent throught the GPSD port looking for a pulsating
+circle in your map:
+
+![gpsmap screenshot](/doc/gps-position.jpg "GPS position")
+
