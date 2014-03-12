@@ -44,6 +44,7 @@ class MapConfig(object):
     H        = None
     V        = None
     route    = None
+    points   = None
 
     # calculated properties
     to       = None
@@ -57,6 +58,7 @@ class MapConfig(object):
 
     def reset(self):
         self.route    = [ ]
+        self.points   = { }
         self.filename = None
         self.imgpath  = None
         self.A        = None
@@ -80,6 +82,9 @@ class MapConfig(object):
         if self.pixbuf is not None:
             self.pixbuf.destroy()
         self.pixbuf = None
+
+    def point_add(self, name, x, y):
+        points[name] = [ x, y ]
 
     def unset_ref(self, pn):
         if   pn == "A": self.A = None

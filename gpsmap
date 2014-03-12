@@ -99,10 +99,21 @@ class Main(object):
              ('help.about',         None,           '_About',            None,         None,               self.about),
              ('view',               None,           '_View'),
             ])
-        a = gtk.ToggleAction('view.ref_points', '_Reference points', None, None)
-        a.connect("toggled", self.mw.is_visible, "ref_points")
-        a.set_active(True)
-        action_group.add_action(a)
+        action_group.add_radio_actions([
+                ("view.bg_off",    None, "Background off",    None, None, 0),
+                ("view.bg_dimmed", None, "Background dimmed", None, None, 1),
+                ("view.bg_on",     None, "Background on",     None, None, 2),
+            ], 2, self.mw.bg_visible)
+        for ta in [
+                    [ "ref_points", "_Reference points" ],
+                    [ "route",      "Rou_te"            ],
+                    [ "points",     "_Points"           ],
+                  ]:
+            a = gtk.ToggleAction("view.%s" % ta[0], ta[1], None, None)
+            a.connect("toggled", self.mw.is_visible, ta[0])
+            a.set_active(True)
+            action_group.add_action(a)
+
         ui_manager.insert_action_group(action_group, 0)
 
         # create menu and accelerator group
@@ -286,8 +297,8 @@ class Main(object):
             self.mw.ruler_set_end(event.x, event.y)
 
         if self.select_mode is not None:
-            if self.select_mode == "A":
-                self.mw.select_mode("A", event.x, event.y)
+            if self.select_mode == "A" or self.select_mode == "P":
+                self.mw.select_mode(self.select_mode, event.x, event.y)
             if self.select_mode == "H":
                 self.mw.select_mode("H", event.x, self.mc.A[0][1])
             if self.select_mode == "V":
@@ -340,18 +351,29 @@ class Main(object):
 
     def set_ref_dialog(self, n, x, y):
         # get coords
-        (a, l) = GPS.sex2dec(
-                    unicode(self.getText(
-                        "Set reference coordinate %s" % n,
-                        "at position (%d, %d)" % (x, y),
-                        "Coordinate"), "utf-8"))
-        if a is None:
-            self.status("Bad coordinates specified.")
-            self.mw.redraw()
-            return
+        if n != "P":
+            (a, l) = GPS.sex2dec(
+                        unicode(self.getText(
+                            "Set reference coordinate %s" % n,
+                            "at position (%d, %d)" % (x, y),
+                            "Coordinate"), "utf-8"))
+            if a is None:
+                self.status("Bad coordinates specified.")
+                self.mw.redraw()
+                return
 
-        # store in the 'ref_points' structure
-        self.set_ref(n, x, y, a, l)
+            # store in the 'ref_points' structure
+            self.set_ref(n, x, y, a, l)
+        else:
+            n = self.getText(
+                    "Set a name for this point.",
+                    "at position (%d, %d)" % (x, y),
+                    "Coordinate")
+            if n is not None:
+                self.mc.point_add(unicode(n, "utf-8"), x, y)
+            else:
+                self.status("Bad name specified.")
+            self.mw.redraw()
 
     def set_select_ref(self, ref):
         if self.mc is None or self.mc.imgpath is None:
@@ -372,6 +394,9 @@ class Main(object):
 
     def set_ref_V(self, action = None, data = None):
         self.set_select_ref("V")
+
+    def set_ref_P(self, action = None, data = None):
+        self.set_select_ref("P")
 
     def new(self, action, data = None):
         logging.info("New map")

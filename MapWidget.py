@@ -54,7 +54,14 @@ class MapWidget(gtk.DrawingArea):
         self.select_y = None
         self.visible  = {
             "ref_points": False,
+            "points":     False,
+            "route":      False,
+            "background": 2,
         }
+
+    def bg_visible(self, action, value):
+        self.visible["background"] = value.get_current_value()
+        self.redraw()
 
     def is_visible(self, action, element):
         self.visible[element] = not self.visible[element]
@@ -97,79 +104,95 @@ class MapWidget(gtk.DrawingArea):
         # copy image background
         cr.set_source_pixbuf(self.mc.pixbuf, 0, 0)
         cr.paint()
+        if self.visible["background"] != 2:
+            cr.set_source_rgba(0, 0, 0, .5 if self.visible["background"] == 1 else .9)
+            cr.rectangle(0, 0, self.mc.pixbuf.get_width() - 1, self.mc.pixbuf.get_height() - 1)
+            cr.fill()
+            cr.stroke()
 
         # draw route
-        lp = None
-        for p in self.mc.route:
-            if lp is None:
-                cr.set_source_rgba(0, 1, 0, 0.8);
-                cr.arc(p[0], p[1], 10.0, 0, 2*math.pi);
-                cr.fill();
-                cr.stroke()
-            else:
-                cr.set_source_rgba(0, 1, 0, 0.9);
-                cr.move_to(lp[0], lp[1])
-                cr.line_to(p[0], p[1])
-                cr.stroke()
-                cr.set_source_rgba(0, 1, 0, 0.4);
-                cr.arc(p[0], p[1], 10.0, 0, 2*math.pi);
-                cr.fill();
-                cr.stroke()
-            lp = p
+        if self.visible["route"]:
+            lp = None
+            for p in self.mc.route:
+                if lp is None:
+                    cr.set_source_rgba(0, 1, 0, 0.8)
+                    cr.arc(p[0], p[1], 10.0, 0, 2*math.pi)
+                    cr.fill()
+                    cr.stroke()
+                else:
+                    cr.set_source_rgba(0, 1, 0, 0.9)
+                    cr.move_to(lp[0], lp[1])
+                    cr.line_to(p[0], p[1])
+                    cr.stroke()
+                    cr.set_source_rgba(0, 1, 0, 0.4)
+                    cr.arc(p[0], p[1], 10.0, 0, 2*math.pi)
+                    cr.fill()
+                    cr.stroke()
+                lp = p
 
         # draw reference points
         if self.visible["ref_points"]:
             for p in [ self.mc.A, self.mc.H, self.mc.V ]:
                 if p is not None:
-                    cr.set_source_rgba(0, 0, 0, 1);
-                    cr.set_line_width(4);
+                    cr.set_source_rgba(0, 0, 0, 1)
+                    cr.set_line_width(4)
                     cr.move_to(p[0][0] - 8 + 1, p[0][1] - 8 + 1)
                     cr.line_to(p[0][0] + 8 + 1, p[0][1] + 8 + 1)
                     cr.move_to(p[0][0] - 8 + 1, p[0][1] + 8 + 1)
                     cr.line_to(p[0][0] + 8 + 1, p[0][1] - 8 + 1)
                     cr.stroke()
-                    cr.set_line_width(3);
-                    cr.set_source_rgba(1, 0, 0, 0.8);
+                    cr.set_line_width(3)
+                    cr.set_source_rgba(1, 0, 0, 0.8)
                     cr.move_to(p[0][0] - 8, p[0][1] - 8)
                     cr.line_to(p[0][0] + 8, p[0][1] + 8)
                     cr.move_to(p[0][0] - 8, p[0][1] + 8)
                     cr.line_to(p[0][0] + 8, p[0][1] - 8)
                     cr.stroke()
 
+        if self.visible["points"]:
+            for n in self.mc.points.keys():
+                cr.set_source_rgba(0, 0, 1, .8)
+                cr.set_line_width(2)
+                cr.arc(p[n][0], p[n][1], 4.0, 0, 2*math.pi)
+                cr.stroke()
+                cr.arc(p[n][0], p[n][1], 2.0, 0, 2*math.pi)
+                cr.fill()
+                cr.stroke()
+
         # draw selection
         if self.select_m is not None:
             if self.select_m == "H" or self.select_m == "A":
-                cr.set_source_rgba(0, 0, 0, 1);
-                cr.set_line_width(1);
+                cr.set_source_rgba(0, 0, 0, 1)
+                cr.set_line_width(1)
                 cr.move_to(0, self.select_y + 1)
                 cr.line_to(self.mc.pixbuf.get_width(), self.select_y + 1)
                 cr.stroke()
-                cr.set_source_rgba(1, 1, 0, 0.7);
-                cr.set_line_width(3);
+                cr.set_source_rgba(1, 1, 0, 0.7)
+                cr.set_line_width(3)
                 cr.move_to(0, self.select_y)
                 cr.line_to(self.mc.pixbuf.get_width(), self.select_y)
                 cr.stroke()
             if self.select_m == "V" or self.select_m == "A":
-                cr.set_source_rgba(0, 0, 0, 1);
-                cr.set_line_width(1);
+                cr.set_source_rgba(0, 0, 0, 1)
+                cr.set_line_width(1)
                 cr.move_to(self.select_x + 1, 0)
                 cr.line_to(self.select_x + 1, self.mc.pixbuf.get_height())
                 cr.stroke()
-                cr.set_source_rgba(1, 1, 0, 0.7);
-                cr.set_line_width(3);
+                cr.set_source_rgba(1, 1, 0, 0.7)
+                cr.set_line_width(3)
                 cr.move_to(self.select_x, 0)
                 cr.line_to(self.select_x, self.mc.pixbuf.get_height())
                 cr.stroke()
             if self.select_m != "A":
-                cr.set_source_rgba(0, 0, 0, 1);
-                cr.set_line_width(1);
+                cr.set_source_rgba(0, 0, 0, 1)
+                cr.set_line_width(1)
                 cr.move_to(self.select_x - 8 + 1, self.select_y - 8 + 1)
                 cr.line_to(self.select_x + 8 + 1, self.select_y + 8 + 1)
                 cr.move_to(self.select_x - 8 + 1, self.select_y + 8 + 1)
                 cr.line_to(self.select_x + 8 + 1, self.select_y - 8 + 1)
                 cr.stroke()
-                cr.set_source_rgba(1, 1, 0, 0.7);
-                cr.set_line_width(3);
+                cr.set_source_rgba(1, 1, 0, 0.7)
+                cr.set_line_width(3)
                 cr.move_to(self.select_x - 8, self.select_y - 8)
                 cr.line_to(self.select_x + 8, self.select_y + 8)
                 cr.move_to(self.select_x - 8, self.select_y + 8)
@@ -178,13 +201,13 @@ class MapWidget(gtk.DrawingArea):
 
         # draw ruler
         if self.ruler is not None:
-                cr.set_line_width(6);
-                cr.set_source_rgba(0, 0, 0, 1);
+                cr.set_line_width(6)
+                cr.set_source_rgba(0, 0, 0, 1)
                 cr.move_to(self.ruler[0], self.ruler[1])
                 cr.line_to(self.ruler[2], self.ruler[3])
                 cr.stroke()
-                cr.set_line_width(4);
-                cr.set_source_rgba(0, 1, 0, 1);
+                cr.set_line_width(4)
+                cr.set_source_rgba(0, 1, 0, 1)
                 cr.set_dash([ 5.0 ], 0)
                 cr.move_to(self.ruler[0], self.ruler[1])
                 cr.line_to(self.ruler[2], self.ruler[3])
@@ -198,15 +221,15 @@ class MapWidget(gtk.DrawingArea):
                 xbearing, ybearing, width, height, xadvance, yadvance = (cr.text_extents(distance))
                 x = ((self.ruler[0] + self.ruler[2]) / 2)
                 y = ((self.ruler[1] + self.ruler[3]) / 2)
-                cr.set_source_rgba(0, 0, 0, 0.6);
-                cr.set_line_width(1);
+                cr.set_source_rgba(0, 0, 0, 0.6)
+                cr.set_line_width(1)
                 cr.rectangle(x - width, y - height, width*2, height*2)
                 cr.fill()
                 cr.stroke()
-                cr.set_source_rgba(0, 0, 0, 1);
+                cr.set_source_rgba(0, 0, 0, 1)
                 cr.move_to(x + 1 - width/2, y + 1)
                 cr.show_text(distance)
-                cr.set_source_rgba(1, 1, 1, 1);
+                cr.set_source_rgba(1, 1, 1, 1)
                 cr.move_to(x - width/2, y)
                 cr.show_text(distance)
             

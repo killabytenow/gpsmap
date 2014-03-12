@@ -47,6 +47,11 @@
     </menu>
     <menu action="view">
       <menuitem name="ref_points" action="view.ref_points" />
+      <menuitem name="route"      action="view.route"      />
+      <menuitem name="points"     action="view.points"     />
+      <menuitem name="bg_off"     action="view.bg_off"     />
+      <menuitem name="bg_dimmed"  action="view.bg_dimmed"  />
+      <menuitem name="bg_on"      action="view.bg_on"  />
     </menu>
     <menu name="Help" action="help">
       <menuitem name="About" action="help.about"/>
