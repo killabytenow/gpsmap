@@ -77,6 +77,11 @@ pressing and dragging the mouse right-button over the map:
 
    ![gpsmap screenshot](/doc/ruler.jpg "Ruler")
 
+Or testing the precision of your routes saving them with the "File -> Save KML
+route" option and loading them in Google Earth maps. If you have set correctly
+the three reference points your route will fit perfectly on the Google Earth
+maps!
+
 Tracing a route
 ---------------
 
