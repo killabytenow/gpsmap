@@ -135,7 +135,7 @@ class MapWidget(gtk.DrawingArea):
             cr.stroke()
 
         # draw route
-        if self.visible["route"]:
+        if self.visible["route"] and self.mc.route is not None:
             lp = None
             for p in self.mc.route:
                 if lp is None:
