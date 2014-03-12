@@ -255,6 +255,7 @@ class MapConfig(object):
 <Document>
 <Placemark><name>route</name>
 <description>gpsmap route</description>
+<Style><LineStyle><color>7fff0000</color><width>3</width></LineStyle></Style>
 <LineString>
 <coordinates>
 """)
