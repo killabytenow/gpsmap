@@ -603,7 +603,7 @@ class Main(object):
             logging.info("File choosed is puf puf")
             return None
 
-        self.load(filename)
+        self.open(filename)
 
     def save_as(self, action, data = None):
         # open save file chooser
