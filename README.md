@@ -82,6 +82,8 @@ route" option and loading them in Google Earth maps. If you have set correctly
 the three reference points your route will fit perfectly on the Google Earth
 maps!
 
+   ![gpsmap screenshot](/doc/route-kml.jpg "KML route on Google Earth")
+
 Tracing a route
 ---------------
 
