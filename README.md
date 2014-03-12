@@ -40,9 +40,11 @@ To start a new project follow these steps:
      Choose your reference base point (we call it Reference A) and click on it.
      A dialog will appear asking for the geographic coordinates for this point.
      Use some earth map software (like Google Earth) to find them.
+
 ![gpsmap screenshot](/doc/choose-ref-A-01.jpg "choosing reference point A")
 
      Once confirmed you will get the following mark on your map:
+
 ![gpsmap screenshot](/doc/choose-ref-A-02.jpg "Reference point A set")
 
   3. You will need to do this operation two times more. Now we will set the
@@ -54,8 +56,10 @@ To start a new project follow these steps:
 
      Once you clicked it will appear a dialog asking for the geographical
      coordinates of this point.
+
 ![gpsmap screenshot](/doc/choose-ref-H-01.jpg "choosing reference point H")
 
      Once confirmed you will get the following mark on your map:
+
 ![gpsmap screenshot](/doc/choose-ref-H-02.jpg "Reference point H set")
 
