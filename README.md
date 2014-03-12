@@ -31,35 +31,35 @@ To start the program run:
 
 To start a new project follow these steps:
 
-  1. Load your image map (JPG, PNG, ...) using the "Config -> Load map image"
-     menu option.
+1. Load your image map (JPG, PNG, ...) using the "Config -> Load map image"
+   menu option.
 
-  2. Go to the "Config -> Reference points -> Set reference A". A yellow-cross
-     following your mouse will apear on your map.
+2. Go to the "Config -> Reference points -> Set reference A". A yellow-cross
+   following your mouse will apear on your map.
 
-     Choose your reference base point (we call it Reference A) and click on it.
-     A dialog will appear asking for the geographic coordinates for this point.
-     Use some earth map software (like Google Earth) to find them.
+   Choose your reference base point (we call it Reference A) and click on it.
+   A dialog will appear asking for the geographic coordinates for this point.
+   Use some earth map software (like Google Earth) to find them.
 
-![gpsmap screenshot](/doc/choose-ref-A-01.jpg "choosing reference point A")
+   ![gpsmap screenshot](/doc/choose-ref-A-01.jpg "choosing reference point A")
 
-     Once confirmed you will get the following mark on your map:
+   Once confirmed you will get the following mark on your map:
 
-![gpsmap screenshot](/doc/choose-ref-A-02.jpg "Reference point A set")
+   ![gpsmap screenshot](/doc/choose-ref-A-02.jpg "Reference point A set")
 
-  3. You will need to do this operation two times more. Now we will set the
-     horizontal axis reference point (we call it H).
-     
-     Go to the "Config -> Reference points -> Set reference H". This time you
-     will get a yellow line with a little cross moving along it. This cross
-     will set the position of the H point when you click with your mouse.
+3. You will need to do this operation two times more. Now we will set the
+   horizontal axis reference point (we call it H).
+   
+   Go to the "Config -> Reference points -> Set reference H". This time you
+   will get a yellow line with a little cross moving along it. This cross
+   will set the position of the H point when you click with your mouse.
 
-     Once you clicked it will appear a dialog asking for the geographical
-     coordinates of this point.
+   Once you clicked it will appear a dialog asking for the geographical
+   coordinates of this point.
 
-![gpsmap screenshot](/doc/choose-ref-H-01.jpg "choosing reference point H")
+   ![gpsmap screenshot](/doc/choose-ref-H-01.jpg "choosing reference point H")
 
-     Once confirmed you will get the following mark on your map:
+   Once confirmed you will get the following mark on your map:
 
-![gpsmap screenshot](/doc/choose-ref-H-02.jpg "Reference point H set")
+   ![gpsmap screenshot](/doc/choose-ref-H-02.jpg "Reference point H set")
 
