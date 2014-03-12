@@ -92,3 +92,24 @@ circle in your map:
 
 ![gpsmap screenshot](/doc/gps-position.jpg "GPS position")
 
+Playing a route
+---------------
+
+For playing a route press the "Animate -> Start" option menu. It will start
+playing the route while you are moving with your laptop at the same speed:
+
+![gpsmap screenshot](/doc/walking.jpg "Walking a route")
+
+You can configure your walking speed in the "Config -> Set walking speed":
+
+![gpsmap screenshot](/doc/walking-speed.jpg "Walking speed")
+
+Please note that if the "Animate -> Pause at checkpoints" option is checked,
+the route will pause automatically each time you reach a control point:
+
+![gpsmap screenshot](/doc/walking-pause-checkpoint.jpg "Pause at checkpoint")
+
+You can resume the route hitting the ENTER key. The "Pause at checkpoints"
+option is useful for resynchronizing your walking with the gpsmap walking :D
+
+Please note that the ENTER key is a "PAUSE/RESUME" key binding.

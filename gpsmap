@@ -330,7 +330,7 @@ class Main(object):
                 self.mw.select_mode("V", self.mc.A[0][0], event.y)
 
     def map_key_press(self, widget, event=None):
-        logging.info("key = %d" % event.keyval)
+        #logging.info("key = %d" % event.keyval)
         if event.keyval == 65293: # ENTER
             if self.walking["cnode"] is None:
                 self.status("You need to start a walk - go to 'Animate' menu and press 'Start'.")
@@ -398,9 +398,9 @@ class Main(object):
             d = GPS.distance(
                     self.walking["from"][0], self.walking["from"][1],
                     self.walking["to"][0],   self.walking["to"][1])
-            self.walking["ts"] = d / (self.mc.walk_speed / 3600)
+            self.walking["ts"] = d / (float(self.mc.walk_speed) / 3600.0)
             self.walking["s"] = 0.0
-            logging.info("walking: %.2f meters to next point (i will need %.2f seconds)." % (d, self.walking["ts"]))
+            self.status("walking: %.2f meters to next point (i will need %.2f seconds at %.2f km/h)." % (d, self.walking["ts"], self.mc.walk_speed / 1000))
         else:
             self.walking["s"] = self.walking["s"] + (self.walking["refresh"] / 1000.0)
 
