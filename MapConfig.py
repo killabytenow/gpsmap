@@ -67,7 +67,6 @@ class MapConfig(object):
         self.A        = None
         self.H        = None
         self.V        = None
-        self.route    = None
         self.to       = None
         self.raca     = None
         self.dflo     = None

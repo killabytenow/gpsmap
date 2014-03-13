@@ -89,10 +89,10 @@ class Main(object):
         # is returned in "delete_event" callback)
         self.window.connect("destroy", self.destroy)
 
+        self.mw = MapWidget.MapWidget(self.mc)
+
         # create the UI Manager
         ui_manager = gtk.UIManager()
-
-        self.mw = MapWidget.MapWidget(self.mc)
 
         # create actions
         action_group = gtk.ActionGroup('GPSmap')
@@ -103,11 +103,11 @@ class Main(object):
              ('file.open',          None,           '_Open map',          '<Control>o', None,               self.open_dialog),
              ('file.save',          None,           '_Save map',          '<Control>s', None,               self.save),
              ('file.save_route',    None,           '_Save KML route',    None,         None,               self.route_save_kml),
-             ('config',             None,           '_Config'),
-             ('config.map_load',    None,           '_Load map image',    None,         None,               self.map_load_dialog),
-             ('config.route_unset', None,           '_Reset route',       None,         None,               self.route_unset),
-             ('config.add_point',   None,           'Add _point',         None,         None,               self.set_ref_P),
-             ('config.wspeed',      None,           'Set _walking speed', None,         None,               self.set_walk_speed_dialog),
+             ('edit',               None,           '_Edit'),
+             ('edit.map_load',      None,           '_Load map image',    None,         None,               self.map_load_dialog),
+             ('edit.route_unset',   None,           '_Reset route',       None,         None,               self.route_unset),
+             ('edit.add_point',     None,           'Add _point',         None,         None,               self.set_ref_P),
+             ('edit.wspeed',        None,           'Set _walking speed', None,         None,               self.set_walk_speed_dialog),
              ('refp',               None,           '_Reference points'), 
              ('refp.set_ref_A',     None,           'Set reference _A',   None,         None,               self.set_ref_A),
              ('refp.set_ref_H',     None,           'Set reference _H',   None,         None,               self.set_ref_H),
@@ -134,9 +134,9 @@ class Main(object):
             a.set_active(True)
             action_group.add_action(a)
         self.play_action = gtk.ToggleAction("anim.play", "_Play", None, None)
-        self.play_action.connect("toggled", self.route_is_walking)
+        self.play_action.connect("toggled", self.route_pause_toggle)
         self.play_action.set_active(True)
-        action_group.add_action(self.play_action)
+        action_group.add_action_with_accel(self.play_action, "Return")
         a = gtk.ToggleAction("anim.pausing", "Pause at chec_kpoints", None, None)
         a.connect("toggled", self.route_is_pausing)
         a.set_active(True)
@@ -149,9 +149,10 @@ class Main(object):
         ui_manager.add_ui_from_file("%s/resources/ui/context-menu.xml" % self.binpath)
         self.__w_mapmenu = ui_manager.get_widget("/mapmenu")
         menubar = ui_manager.get_widget("/menubar")
+
+        # configure accelerators
         accel_group = ui_manager.get_accel_group()
         self.window.add_accel_group(accel_group)
-
 
         ## More things you need an X window for ...
         #event_box.realize()
@@ -331,15 +332,6 @@ class Main(object):
 
     def map_key_press(self, widget, event=None):
         #logging.info("key = %d" % event.keyval)
-        if event.keyval == 65293: # ENTER
-            if self.walking["cnode"] is None:
-                self.status("You need to start a walk - go to 'Animate' menu and press 'Start'.")
-            if self.play_action.get_active():
-                self.status("Pausing walk")
-                self.play_action.set_active(False)
-            else:
-                self.status("Unpausing walk")
-                self.play_action.set_active(True)
         if event.keyval == 32 and not self.move_map:
             self.move_map   = True
             self.last_press = None
@@ -359,12 +351,14 @@ class Main(object):
     # actions
     # -------------------------------------------------------------------------
 
-    def route_is_walking(self, action):
+    def route_pause_toggle(self, action):
         self.walking["walking"] = not self.walking["walking"]
-        if self.walking["walking"]:
-            logging.info("Walking is NOT paused")
+        if not self.walking["walking"]:
+            self.status("Pausing walk")
         else:
-            logging.info("Walking is paused")
+            self.status("Resuming walk")
+        if self.walking["cnode"] is None:
+            self.status("You need to start a walk - go to 'Animate' menu and press 'Start'.")
 
     def route_is_pausing(self, action):
         self.walking["pausing"] = not self.walking["pausing"]

@@ -25,27 +25,34 @@
 ###############################################################################
 ]]>
 <ui>
+  <accelerator name="acc_new"  action="file.new" />
+  <accelerator name="acc_open" action="file.open" />
+  <accelerator name="acc_save" action="file.save" />
+  <accelerator name="acc_quit" action="file.quit" />
   <menubar name="menubar">
     <menu action="file">
-      <menuitem name="new"  action="file.new"  />
-      <menuitem name="open" action="file.open"  />
-      <menuitem name="save" action="file.save" />
-      <placeholder name="RecentFiles" />
+      <menuitem name="mb_file_new"  action="file.new"  />
+      <menuitem name="mb_file_open" action="file.open"  />
+      <menuitem name="mb_file_save" action="file.save" />
       <separator />
-      <menuitem name="save_route" action="file.save_route" />
+      <placeholder name="mb_file_recent_files" />
       <separator />
-      <menuitem name="quit" action="file.quit" />
+      <menuitem name="mb_file_save_route" action="file.save_route" />
+      <separator />
+      <menuitem name="mb_file_quit" action="file.quit" />
     </menu>
-    <menu action="config">
-      <menuitem name="map_load"  action="config.map_load" />
+    <menu action="edit">
+      <menuitem name="map_load"  action="edit.map_load" />
       <menu action="refp">
         <menuitem name="set_A" action="refp.set_ref_A" />
         <menuitem name="set_H" action="refp.set_ref_H" />
         <menuitem name="set_V" action="refp.set_ref_V" />
       </menu>
-      <menuitem name="route_unset" action="config.route_unset" />
-      <menuitem name="add_point"   action="config.add_point"   />
-      <menuitem name="wspeed"      action="config.wspeed"      />
+      <separator />
+      <menuitem name="wspeed"      action="edit.wspeed"      />
+      <menuitem name="route_unset" action="edit.route_unset" />
+      <separator />
+      <menuitem name="add_point"   action="edit.add_point"   />
     </menu>
     <menu action="view">
       <menuitem name="ref_points" action="view.ref_points" />

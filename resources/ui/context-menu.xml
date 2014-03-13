@@ -26,12 +26,12 @@
 ]]>
 <ui>
   <popup name="mapmenu">
-    <menuitem name="map_load" action="config.map_load" />
+    <menuitem name="map_load" action="edit.map_load" />
     <menu action="refp">
       <menuitem name="set_A" action="refp.set_ref_A" />
       <menuitem name="set_H" action="refp.set_ref_H" />
       <menuitem name="set_V" action="refp.set_ref_V" />
     </menu>
-    <menuitem name="route_unset" action="config.route_unset" />
+    <menuitem name="route_unset" action="edit.route_unset" />
   </popup>
 </ui>
