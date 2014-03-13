@@ -210,7 +210,6 @@ class Main(object):
 
     def set_edit_mode(self, action, value):
         self.edit_mode = value.get_current_value()
-        logging.info("set edit mode %d" % self.edit_mode)
 
     def title(self, fname = None):
         t = "gpsmap"
@@ -291,7 +290,6 @@ class Main(object):
                 self.select_mode = None
                 self.mw.select_mode(None)
             else:
-                logging.info("mode = %d" % self.edit_mode)
                 if self.edit_mode == 0:
                     self.set_curr_pos(event.x, event.y)
                 elif self.edit_mode == 1:
@@ -379,9 +377,9 @@ class Main(object):
     def route_is_pausing(self, action):
         self.walking["pausing"] = not self.walking["pausing"]
         if self.walking["pausing"]:
-            logging.info("Stopping at checkpoints")
+            self.status("Stopping at checkpoints")
         else:
-            logging.info("Never stop at checkpoints")
+            self.status("Never stop at checkpoints")
 
     def route_walk(self):
         #self.walking = {
@@ -543,7 +541,7 @@ class Main(object):
             self.status("Cancelled.")
 
     def new(self, action, data = None):
-        logging.info("New map")
+        self.status("New map")
         self.mc.reset()
         self.mw.redraw()
 
@@ -676,17 +674,13 @@ class Main(object):
         self.gpsdthread.start()
         gtk.main()
         self.gpsdthread.quit = True
-        logging.info("fin")
 
 
     def quit(self, action, data = None):
         self.gpsdthread.quit = True
-        logging.info("QUIT %s" % action)
-        # emit the "destroy" signal returning FALSE
         gtk.main_quit()
 
     def about(self, action):
-        logging.info("ABOUT %s" % action)
         about = gtk.AboutDialog()
         about.set_program_name("GPSmap Emulator")
         about.set_version("1.0")
