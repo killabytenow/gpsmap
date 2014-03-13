@@ -50,7 +50,7 @@ class GPSdThread(threading.Thread):
             t = time.gmtime()
         return time.strftime("%Y-%m-%dT%H:%M:%S.000Z", t)
 
-    def get_cmd_VERSION(self):
+    def get_cmd_VERSION(self, params):
         return "%s\r\n" % \
             json.dumps({
                 "class"       : "VERSION",
@@ -113,16 +113,17 @@ class GPSdThread(threading.Thread):
                     ],
             })
 
-    def get_cmd_WATCH(self):
-        return "%s\r\n" % json.dumps({
-                "class"  : "WATCH",
-                "enable" : True,
-                "json"   : True,
-                "nmea"   : False,
-                "raw"    : 0,
-                "scaled" : False,
-                "timing" : False,
-            })
+    def get_cmd_WATCH(self, params):
+        return self.get_cmd_DEVICES() \
+             + "%s\r\n" % json.dumps({
+               "class"  : "WATCH",
+               "enable" : True,
+               "json"   : True,
+               "nmea"   : False,
+               "raw"    : 0,
+               "scaled" : False,
+               "timing" : False,
+           })
 
     def run(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -141,25 +142,47 @@ class GPSdThread(threading.Thread):
                         client_socket, address = server_socket.accept()
                         read_list.append(client_socket)
                         logging.info("Connection from %s" % str(address))
-                        client_socket.send(self.get_cmd_VERSION())
+                        client_socket.send(self.get_cmd_VERSION({}))
                     else:
                         data = s.recv(4096)
+                        data
                         if data:
+                            # remove line terminators
                             if data[-1] == '\n': data = data[0:-1]
                             if data[-1] == '\r': data = data[0:-1]
-                            if data == "?VERSION;":
-                                s.send(self.get_cmd_VERSION())
-                            elif data == '?WATCH={"json":true};':
-                                s.send(self.get_cmd_DEVICES() + self.get_cmd_WATCH())
+
+                            # parse line
+                            command, i, params = data.partition("=")
+                            if command[0] != "?":
+                                logging.error("received trash [%s]" % data)
+                                continue
+                            command = command[1:]
+                            if i is not None: # no params
+                                if params[-1] == ';':
+                                    params = params[0:-1]
+                                logging.info("%s = %s" % (command, json.dumps(params, indent = 4)))
+                                params = json.loads(params)
+                            else:
+                                params = { }
+
+                            # process command
+                            if command == "VERSION":
+                                s.send(self.get_cmd_VERSION(params))
+                            elif command == "WATCH":
+                                s.send(self.get_cmd_WATCH(params))
                                 write_list.append(client_socket)
                             else:
                                 logging.error("UNKNOWN COMMAND [%s]" % data)
-                                s.send("{}")
+                                s.send(
+                                    json.dumps({
+                                        "class":   "ERROR",
+                                        "message": "Unrecognized request '%s'" % command}) + "\r\n")
                         else:
                             logging.info("Closed gpsd connection.")
                             s.close()
                             read_list.remove(s)
-                            write_list.remove(s)
+                            if s in write_list:
+                                write_list.remove(s)
             else:
                 if self.mc.curr_pos is not None:
                     for s in write_list:
