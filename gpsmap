@@ -299,11 +299,11 @@ class Main(object):
                 elif self.edit_mode == 2:
                     self.mw.ruler_set_start(event.x, event.y)
                 else:
-                    logging.error = "bad edit mode %s" % self.edit_mode
+                    logging.error("bad edit mode %s" % self.edit_mode)
 
         if event.button == 3:
             self.move_map   = True
-            self.last_press = [  ]
+            self.last_press = [ event.x, event.y ]
             #self.__w_mapmenu.popup(None, None, None, event.button, event.time)
 
 
