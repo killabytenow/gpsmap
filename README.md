@@ -73,22 +73,31 @@ To start a new project follow these steps:
    ![gpsmap screenshot](/doc/choose-ref-V-02.jpg "Reference point V set")
 
 5. Now gpsmap is fully configured. You can test that it works using the ruler
-pressing and dragging the mouse right-button over the map:
+   (go to "Edit" menu, and select "Ruler mode"), pressing and dragging the
+   mouse left-button over the map:
 
    ![gpsmap screenshot](/doc/ruler.jpg "Ruler")
 
-Or testing the precision of your routes saving them with the "File -> Save KML
-route" option and loading them in Google Earth maps. If you have set correctly
-the three reference points your route will fit perfectly on the Google Earth
-maps!
+   Or testing the precision of your routes saving them with the "File -> Save KML
+   route" option and loading them in Google Earth maps. If you have set correctly
+   the three reference points your route will fit perfectly on the Google Earth
+   maps!
 
    ![gpsmap screenshot](/doc/route-kml.jpg "KML route on Google Earth")
+
+Sending your position
+---------------------
+
+To send a particular position to the software connected to this emulator (i.e.
+Kismet), you only have to press the mouse left button in the "No editing mode".
+For selecting this mode enable the "Edit -> No editing" menu option.
 
 Tracing a route
 ---------------
 
-For tracing a route you only have to press the mouse middle-button. Each time
-you press this button you will add a new route point:
+For tracing a route you only have to change to the "Edit route mode", choosing
+the "Edit -> Edit route" menu option. Once you are in the "Edit route mode" you
+only have to press the mouse left-button to add new route points:
 
 ![gpsmap screenshot](/doc/route.jpg "Adding route points")
 
@@ -120,3 +129,4 @@ You can resume the route hitting the ENTER key. The "Pause at checkpoints"
 option is useful for resynchronizing your walking with the gpsmap walking :D
 
 Please note that the ENTER key is a "PAUSE/RESUME" key binding.
+
