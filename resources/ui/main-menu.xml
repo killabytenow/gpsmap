@@ -42,7 +42,11 @@
       <menuitem name="mb_file_quit" action="file.quit" />
     </menu>
     <menu action="edit">
-      <menuitem name="map_load"  action="edit.map_load" />
+      <menuitem name="e_mode_none"  action="edit.mode_none" />
+      <menuitem name="e_mode_route" action="edit.mode_route" />
+      <menuitem name="e_mode_ruler" action="edit.mode_ruler" />
+      <separator />
+      <menuitem name="map_load" action="edit.map_load" />
       <menu action="refp">
         <menuitem name="set_A" action="refp.set_ref_A" />
         <menuitem name="set_H" action="refp.set_ref_H" />

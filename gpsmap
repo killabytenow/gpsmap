@@ -54,6 +54,7 @@ class Main(object):
     gpsdthread     = None
     walking        = None
     play_action    = None
+    edit_mode      = None
 
     __ui_xml = ''''''
 
@@ -119,6 +120,12 @@ class Main(object):
              ('help.about',         None,           '_About',             None,         None,               self.about),
              ('view',               None,           '_View'),
             ])
+        self.edit_mode = 0
+        action_group.add_radio_actions([
+                ("edit.mode_none",  None, "No editing", None, None, 0),
+                ("edit.mode_route", None, "Edit route", None, None, 1),
+                ("edit.mode_ruler", None, "Ruler mode", None, None, 2),
+            ], 0, self.set_edit_mode)
         action_group.add_radio_actions([
                 ("view.bg_off",    None, "Background off",    None, None, 0),
                 ("view.bg_dimmed", None, "Background dimmed", None, None, 1),
@@ -201,6 +208,10 @@ class Main(object):
     # manage window properties
     # -------------------------------------------------------------------------
 
+    def set_edit_mode(self, action, value):
+        self.edit_mode = value.get_current_value()
+        logging.info("set edit mode %d" % self.edit_mode)
+
     def title(self, fname = None):
         t = "gpsmap"
         if fname is not None and fname != "":
@@ -280,25 +291,30 @@ class Main(object):
                 self.select_mode = None
                 self.mw.select_mode(None)
             else:
-                self.move_map   = True
-                self.last_press = [ event.x, event.y ]
-
-        if event.button == 2:
-            #self.status("(%d, %d)" % (event.x, event.y))
-            self.route_add(event.x, event.y)
+                logging.info("mode = %d" % self.edit_mode)
+                if self.edit_mode == 0:
+                    self.set_curr_pos(event.x, event.y)
+                elif self.edit_mode == 1:
+                    self.route_add(event.x, event.y)
+                elif self.edit_mode == 2:
+                    self.mw.ruler_set_start(event.x, event.y)
+                else:
+                    logging.error = "bad edit mode %s" % self.edit_mode
 
         if event.button == 3:
-            self.mw.ruler_set_start(event.x, event.y)
-            #make widget popup
+            self.move_map   = True
+            self.last_press = [  ]
             #self.__w_mapmenu.popup(None, None, None, event.button, event.time)
 
+
     def map_button_release(self, widget, event=None):
-        if event.button == 1:
+        if event.button == 1 and self.edit_mode == 2:
+            self.mw.ruler_unset()
+
+        if event.button == 3:
             self.move_map   = False
             self.last_press = None
 
-        if event.button == 3:
-            self.mw.ruler_unset()
 
     def map_motion_notify(self, widget, event=None):
         #logging.info("polla (%s, %s, %s)" % (self, widget, event))
