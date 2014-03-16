@@ -157,13 +157,16 @@ class GPSdThread(threading.Thread):
                                 logging.error("received trash [%s]" % data)
                                 continue
                             command = command[1:]
-                            if i is not None: # no params
+                            if params is not None and params != "": # no params
                                 if params[-1] == ';':
                                     params = params[0:-1]
                                 logging.info("%s = %s" % (command, json.dumps(params, indent = 4)))
                                 params = json.loads(params)
                             else:
                                 params = { }
+                                logging.info("wo params")
+                                if len(command) > 0 and command[-1] == ";":
+                                    command = command[0:-1]
 
                             # process command
                             if command == "VERSION":

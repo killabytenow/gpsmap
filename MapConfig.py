@@ -226,6 +226,10 @@ class MapConfig(object):
         self.curr_pos = self.pixel2coords(x, y)
         return self.curr_pos
 
+    def unset_curr_pos(self):
+        self.curr_xy = None
+        self.curr_pos = None
+
     def route_add(self, x, y):
         self.route.append([x, y])
 

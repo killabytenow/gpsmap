@@ -53,7 +53,7 @@ class Main(object):
     mw             = None
     gpsdthread     = None
     walking        = None
-    play_action    = None
+    pause_action   = None
     edit_mode      = None
 
     __ui_xml = ''''''
@@ -63,7 +63,7 @@ class Main(object):
         self.select_mode = None
         self.move_map    = False
         self.walking = {
-            "walking": False,
+            "walking": True,
             "cnode":   None,
             "tnode":   None,
             "from":    None,
@@ -82,13 +82,17 @@ class Main(object):
         self.title()
         self.window.set_border_width(3)
 
-        # "delete_event" signal (given by the WM, usually by the "close"
-        # option)
-        self.window.connect("delete_event", self.quit)
-
-        # "destroy" event (occurs when gtk_widget_destroy() is called or False
-        # is returned in "delete_event" callback)
-        self.window.connect("destroy", self.destroy)
+        # load icons
+        icon_fact = gtk.IconFactory()
+        for name, filename in {
+                                "print-kml" : "kml.png",
+                                "locked"    : "locked.png",
+                                "edit"      : "edit.png",
+                                "ruler"     : "ruler.png",
+                              }.iteritems():
+            icon_set = gtk.IconSet(gtk.gdk.pixbuf_new_from_file("resources/icons/%s" % filename))
+            icon_fact.add(name, icon_set)
+        icon_fact.add_default()
 
         self.mw = MapWidget.MapWidget(self.mc)
 
@@ -98,33 +102,32 @@ class Main(object):
         # create actions
         action_group = gtk.ActionGroup('GPSmap')
         action_group.add_actions(
-            [('file.quit',          gtk.STOCK_QUIT, '_Quit me!',          None,         'Quit the Program', self.quit),
-             ('file',               None,           '_File'),
-             ('file.new',           gtk.STOCK_NEW,  '_New map',           '<Control>n', None,               self.new),
-             ('file.open',          None,           '_Open map',          '<Control>o', None,               self.open_dialog),
-             ('file.save',          None,           '_Save map',          '<Control>s', None,               self.save),
-             ('file.save_route',    None,           '_Save KML route',    None,         None,               self.route_save_kml),
-             ('edit',               None,           '_Edit'),
-             ('edit.map_load',      None,           '_Load map image',    None,         None,               self.map_load_dialog),
-             ('edit.route_unset',   None,           '_Reset route',       None,         None,               self.route_unset),
-             ('edit.add_point',     None,           'Add _point',         None,         None,               self.set_ref_P),
-             ('edit.wspeed',        None,           'Set _walking speed', None,         None,               self.set_walk_speed_dialog),
-             ('refp',               None,           '_Reference points'), 
-             ('refp.set_ref_A',     None,           'Set reference _A',   None,         None,               self.set_ref_A),
-             ('refp.set_ref_H',     None,           'Set reference _H',   None,         None,               self.set_ref_H),
-             ('refp.set_ref_V',     None,           'Set reference _V',   None,         None,               self.set_ref_V),
-             ('anim',               None,           '_Animate'),
-             ('anim.start',         None,           '_Start',             None,         None,               self.route_walk_start),
-             ('anim.reset',         None,           '_Reset',             None,         None,               self.route_walk_reset),
-             ('help',               None,           '_Help'),
-             ('help.about',         None,           '_About',             None,         None,               self.about),
-             ('view',               None,           '_View'),
+            [('file.quit',          gtk.STOCK_QUIT,       '_Quit me!',          None,         'Quit the Program', self.quit),
+             ('file',               None,                 '_File'),
+             ('file.new',           gtk.STOCK_NEW,        '_New map',           '<Control>n', None,               self.new),
+             ('file.open',          gtk.STOCK_OPEN,       '_Open map',          '<Control>o', None,               self.open_dialog),
+             ('file.save',          gtk.STOCK_SAVE,       '_Save map',          '<Control>s', None,               self.save),
+             ('file.save_route',    "print-kml",          '_Save KML route',    None,         None,               self.route_save_kml),
+             ('edit',               None,                 '_Edit'),
+             ('edit.map_load',      None,                 '_Load map image',    None,         None,               self.map_load_dialog),
+             ('edit.route_unset',   None,                 '_Reset route',       None,         None,               self.route_unset),
+             ('edit.add_point',     None,                 'Add _point',         None,         None,               self.set_ref_P),
+             ('edit.wspeed',        None,                 'Set _walking speed', None,         None,               self.set_walk_speed_dialog),
+             ('refp',               None,                 '_Reference points'), 
+             ('refp.set_ref_A',     None,                 'Set reference _A',   None,         None,               self.set_ref_A),
+             ('refp.set_ref_H',     None,                 'Set reference _H',   None,         None,               self.set_ref_H),
+             ('refp.set_ref_V',     None,                 'Set reference _V',   None,         None,               self.set_ref_V),
+             ('anim',               None,                 '_Animate'),
+             ('anim.start',         gtk.STOCK_MEDIA_PLAY, '_Start',             None,         None,               self.route_walk_start),
+             ('help',               None,                 '_Help'),
+             ('help.about',         None,                 '_About',             None,         None,               self.about),
+             ('view',               None,                 '_View'),
             ])
         self.edit_mode = 0
         action_group.add_radio_actions([
-                ("edit.mode_none",  None, "No editing", None, None, 0),
-                ("edit.mode_route", None, "Edit route", None, None, 1),
-                ("edit.mode_ruler", None, "Ruler mode", None, None, 2),
+                ("edit.mode_none",  "locked", "No editing", None, None, 0),
+                ("edit.mode_route", "edit",   "Edit route", None, None, 1),
+                ("edit.mode_ruler", "ruler",  "Ruler mode", None, None, 2),
             ], 0, self.set_edit_mode)
         action_group.add_radio_actions([
                 ("view.bg_off",    None, "Background off",    None, None, 0),
@@ -140,10 +143,10 @@ class Main(object):
             a.connect("toggled", self.mw.is_visible, ta[0])
             a.set_active(True)
             action_group.add_action(a)
-        self.play_action = gtk.ToggleAction("anim.play", "_Play", None, None)
-        self.play_action.connect("toggled", self.route_pause_toggle)
-        self.play_action.set_active(True)
-        action_group.add_action_with_accel(self.play_action, "Return")
+        self.pause_action = gtk.ToggleAction("anim.pause", "_Pause", None, gtk.STOCK_MEDIA_PAUSE)
+        self.pause_action.connect("toggled", self.route_pause_toggle)
+        self.pause_action.set_active(False)
+        action_group.add_action_with_accel(self.pause_action, "Return")
         a = gtk.ToggleAction("anim.pausing", "Pause at chec_kpoints", None, None)
         a.connect("toggled", self.route_is_pausing)
         a.set_active(True)
@@ -172,21 +175,18 @@ class Main(object):
         self.__w_sw = gtk.ScrolledWindow()
         self.__w_sw.add_with_viewport(self.mw)
 
+        toolbar = ui_manager.get_widget("/toolbar")
+
+        # create status bar
         self.statusbar = gtk.Statusbar()
 
+        # fill window
         vbox = gtk.VBox(False, 1)
         vbox.pack_start(menubar, False, True, 0)
+        vbox.pack_start(toolbar, False, False, 0)
         vbox.pack_start(self.__w_sw, True, True, 0)
         vbox.pack_end(self.statusbar, False, True, 0)
         self.window.add(vbox)
-
-        # show the main window and widgets
-        menubar.show()
-        self.statusbar.show()
-        self.__w_sw.show()
-        self.mw.show()
-        vbox.show()
-        self.window.show()
 
         # events
         self.mw.add_events(gtk.gdk.EXPOSURE_MASK
@@ -195,11 +195,17 @@ class Main(object):
                               | gtk.gdk.BUTTON_RELEASE_MASK
                               | gtk.gdk.POINTER_MOTION_MASK
                               | gtk.gdk.POINTER_MOTION_HINT_MASK)
+
         self.mw.connect("button_press_event",   self.map_button_press)
         self.mw.connect("button_release_event", self.map_button_release)
         self.mw.connect("motion-notify-event",  self.map_motion_notify)
-        self.window.connect("key-press-event",      self.map_key_press)
-        self.window.connect("key-release-event",    self.map_key_release)
+
+        self.window.connect("key-press-event",   self.map_key_press)
+        self.window.connect("key-release-event", self.map_key_release)
+        self.window.connect("delete_event",      self.quit)
+        self.window.connect("destroy",           self.destroy)
+
+        self.window.show_all()
 
         # say hello
         self.status("GPSmap alpha started")
@@ -382,15 +388,6 @@ class Main(object):
             self.status("Never stop at checkpoints")
 
     def route_walk(self):
-        #self.walking = {
-        #    "walking": False,
-        #    "cnode": None,
-        #    "tnode": None,
-        #    "from":  None,
-        #    "to":    None,
-        #    "s":     None,
-        #    "ts":    None,
-        #    }
         if not self.walking["walking"] \
         or self.walking["cnode"] is None \
         or self.walking["tnode"] is None:
@@ -416,7 +413,7 @@ class Main(object):
             self.walking["cnode"] = self.walking["cnode"] + 1
             self.walking["s"] = None
             if self.walking["pausing"]:
-                self.play_action.set_active(False)
+                self.pause_action.set_active(True)
                 self.status("AT CHECKPOINT. ROUTE PAUSED. Hit Enter to start")
             else:
                 return self.route_walk()
@@ -432,14 +429,15 @@ class Main(object):
     def route_walk_start(self, action, data = None):
         if len(self.mc.route) <= 0:
             return
+        self.mc.unset_curr_pos()
+        self.mw.redraw()
+        self.walking["from"] = None
+        self.walking["to"] = None
+        self.walking["s"] = None
+        self.walking["ts"] = None
         self.walking["cnode"] = 0
         self.walking["tnode"] = len(self.mc.route) - 1
-        self.play_action.set_active(True)
-
-    def route_walk_reset(self, action, data = None):
-        self.play_action.set_active(True)
-        self.walking["cnode"] = None
-        self.walking["tnode"] = None
+        #self.pause_action.set_active(True)
 
     def set_curr_pos(self, x, y):
         p = self.mc.set_curr_pos(x, y)

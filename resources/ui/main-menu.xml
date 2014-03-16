@@ -25,14 +25,17 @@
 ###############################################################################
 ]]>
 <ui>
+  <!-- accelerators -->
   <accelerator name="acc_new"  action="file.new" />
   <accelerator name="acc_open" action="file.open" />
   <accelerator name="acc_save" action="file.save" />
   <accelerator name="acc_quit" action="file.quit" />
+
+  <!-- main menu bar -->
   <menubar name="menubar">
     <menu action="file">
       <menuitem name="mb_file_new"  action="file.new"  />
-      <menuitem name="mb_file_open" action="file.open"  />
+      <menuitem name="mb_file_open" action="file.open" />
       <menuitem name="mb_file_save" action="file.save" />
       <separator />
       <placeholder name="mb_file_recent_files" />
@@ -69,13 +72,36 @@
     <menu action="anim">
       <menuitem name="start"      action="anim.start"  />
       <separator />
-      <menuitem name="play"       action="anim.play"   />
-      <menuitem name="pausing"    action="anim.pausing"   />
-      <separator />
-      <menuitem name="reset"      action="anim.reset"  />
+      <menuitem name="pause"       action="anim.pause"   />
+      <menuitem name="pausing"    action="anim.pausing"  />
     </menu>
     <menu name="Help" action="help">
       <menuitem name="About" action="help.about"/>
     </menu>
   </menubar>
+
+  <!-- toolbars -->
+  <toolbar name="toolbar">
+    <placeholder name="tb_file">
+      <separator />
+      <toolitem name="tb_file_new"        action="file.new"        />
+      <toolitem name="tb_file_open"       action="file.open"       />
+      <toolitem name="tb_file_save"       action="file.save"       />
+      <separator />
+      <toolitem name="tb_file_save_route" action="file.save_route" />
+      <separator />
+    </placeholder>
+    <placeholder name="toolbar_edit">
+      <toolitem name="tb_edit_mode_none"  action="edit.mode_none" />
+      <toolitem name="tb_edit_mode_route" action="edit.mode_route" />
+      <toolitem name="tb_edit_mode_ruler" action="edit.mode_ruler" />
+      <separator />
+    </placeholder>
+    <placeholder name="toolbar_anim">
+      <separator />
+      <toolitem name="tb_anim_start" action="anim.start" />
+      <toolitem name="tb_anim_pause" action="anim.pause" />
+      <separator />
+    </placeholder>
+  </toolbar>
 </ui>
