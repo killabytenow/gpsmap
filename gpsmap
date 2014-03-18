@@ -176,6 +176,9 @@ class Main(object):
         self.__w_sw.add_with_viewport(self.mw)
 
         toolbar = ui_manager.get_widget("/toolbar")
+        toolbar.set_can_focus(False)
+        toolbar.set_can_default(False)
+        toolbar.foreach(lambda x: x.set_focus_chain([]))
 
         # create status bar
         self.statusbar = gtk.Statusbar()
@@ -206,6 +209,7 @@ class Main(object):
         self.window.connect("destroy",           self.destroy)
 
         self.window.show_all()
+        self.mw.grab_focus()
 
         # say hello
         self.status("GPSmap alpha started")
