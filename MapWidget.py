@@ -190,6 +190,7 @@ class MapWidget(gtk.DrawingArea):
                 cr.set_source_rgba(1, 1, 1, 1)
                 cr.move_to(x - width/2, y + height)
                 cr.show_text(n)
+                cr.stroke()
 
         # draw selection
         if self.select_m is not None:
@@ -272,8 +273,8 @@ class MapWidget(gtk.DrawingArea):
                 cr.set_source_rgba(1, 1, 1, 1)
                 cr.move_to(x - width/2, y)
                 cr.show_text(distance)
-                cr.stroke()
                 cr.set_dash([], 0)
+                cr.stroke()
 
         # draw curr_xy
         if self.mc.curr_xy is not None:
