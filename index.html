@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Gpsmap : A GPSD simulator using a map" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Gpsmap</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/killabytenow/gpsmap">View on GitHub</a>
+
+          <h1 id="project_title">Gpsmap</h1>
+          <h2 id="project_tagline">A GPSD simulator using a map</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/killabytenow/gpsmap/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/killabytenow/gpsmap/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="gpsmap" class="anchor" href="#gpsmap"><span class="octicon octicon-link"></span></a>gpsmap</h1>
+
+<p>This is a GPSD (<a href="http://gpsd.berlios.de/">http://gpsd.berlios.de/</a>) simulator using a map.</p>
+
+<p>This tool is designed for making possible to use Kismet (and other GPSD based
+tools) inside buildings, zones without GPS signal, or even without a GPS
+device.</p>
+
+<p>The inner working is simple: you only have to set three reference coordinate
+points on the map using this tool, and the integrated GPSD emulator will start
+to send your position coordinates throught the localhost:2947 port.</p>
+
+<p>This program can also save a planned route and replay it automatically at a
+certain speed (walk speed parameter).</p>
+
+<p>Screenshot:
+<img src="/doc/gpsmap-screenshot.jpg" alt="gpsmap screenshot" title="gpsmap screenshot"></p>
+
+<h2>
+<a name="quick-start" class="anchor" href="#quick-start"><span class="octicon octicon-link"></span></a>Quick start</h2>
+
+<p>You will need Python and pyGTK libraries.</p>
+
+<p>This program is written for Linux, but it should be work seamlessly on other
+UNIX platform. Due it uses sockets it may not work correctly on Windows.</p>
+
+<p>To start the program run:</p>
+
+<p>python ./gpsmap</p>
+
+<p>To start a new project follow these steps:</p>
+
+<ol>
+<li><p>Load your image map (JPG, PNG, ...) using the "Config -&gt; Load map image"
+menu option.</p></li>
+<li>
+<p>Go to the "Config -&gt; Reference points -&gt; Set reference A". A yellow-cross
+following your mouse will apear on your map.</p>
+
+<p>Choose your reference base point (we call it Reference A) and click on it.
+A dialog will appear asking for the geographic coordinates for this point.
+Use some earth map software (like Google Earth) to find them.</p>
+
+<p><img src="/doc/choose-ref-A-01.jpg" alt="gpsmap screenshot" title="choosing reference point A"></p>
+
+<p>Once confirmed you will get the following mark on your map:</p>
+
+<p><img src="/doc/choose-ref-A-02.jpg" alt="gpsmap screenshot" title="Reference point A set"></p>
+</li>
+<li>
+<p>You will need to do this operation two times more. Now we will set the
+horizontal axis reference point (we call it H).</p>
+
+<p>Go to the "Config -&gt; Reference points -&gt; Set reference H". This time you
+will get a yellow line with a little cross moving along it. This cross
+will set the position of the H point when you click with your mouse.</p>
+
+<p>Once you clicked it will appear a dialog asking for the geographical
+coordinates of this point.</p>
+
+<p><img src="/doc/choose-ref-H-01.jpg" alt="gpsmap screenshot" title="choosing reference point H"></p>
+
+<p>Once confirmed you will get the following mark on your map:</p>
+
+<p><img src="/doc/choose-ref-H-02.jpg" alt="gpsmap screenshot" title="Reference point H set"></p>
+</li>
+<li>
+<p>Repeat this process, but this time with the verical axis setting the
+vertical axis reference point (we call it V).</p>
+
+<p><img src="/doc/choose-ref-V-01.jpg" alt="gpsmap screenshot" title="choosing reference point V"></p>
+
+<p>Again you will get a mark on your map:</p>
+
+<p><img src="/doc/choose-ref-V-02.jpg" alt="gpsmap screenshot" title="Reference point V set"></p>
+</li>
+<li>
+<p>Now gpsmap is fully configured. You can test that it works using the ruler
+(go to "Edit" menu, and select "Ruler mode"), pressing and dragging the
+mouse left-button over the map:</p>
+
+<p><img src="/doc/ruler.jpg" alt="gpsmap screenshot" title="Ruler"></p>
+
+<p>Or testing the precision of your routes saving them with the "File -&gt; Save KML
+route" option and loading them in Google Earth maps. If you have set correctly
+the three reference points your route will fit perfectly on the Google Earth
+maps!</p>
+
+<p><img src="/doc/route-kml.jpg" alt="gpsmap screenshot" title="KML route on Google Earth"></p>
+</li>
+</ol><h2>
+<a name="sending-your-position" class="anchor" href="#sending-your-position"><span class="octicon octicon-link"></span></a>Sending your position</h2>
+
+<p>To send a particular position to the software connected to this emulator (i.e.
+Kismet), you only have to press the mouse left button in the "No editing mode".
+For selecting this mode enable the "Edit -&gt; No editing" menu option.</p>
+
+<h2>
+<a name="tracing-a-route" class="anchor" href="#tracing-a-route"><span class="octicon octicon-link"></span></a>Tracing a route</h2>
+
+<p>For tracing a route you only have to change to the "Edit route mode", choosing
+the "Edit -&gt; Edit route" menu option. Once you are in the "Edit route mode" you
+only have to press the mouse left-button to add new route points:</p>
+
+<p><img src="/doc/route.jpg" alt="gpsmap screenshot" title="Adding route points"></p>
+
+<p>Please note that if you have running a software that listens to the GPSD port,
+it will receive the coordinates of the point you a pressing. You will know
+which coordinates are being sent throught the GPSD port looking for a pulsating
+circle in your map:</p>
+
+<p><img src="/doc/gps-position.jpg" alt="gpsmap screenshot" title="GPS position"></p>
+
+<h2>
+<a name="playing-a-route" class="anchor" href="#playing-a-route"><span class="octicon octicon-link"></span></a>Playing a route</h2>
+
+<p>For playing a route press the "Animate -&gt; Start" option menu. It will start
+playing the route while you are moving with your laptop at the same speed:</p>
+
+<p><img src="/doc/walking.jpg" alt="gpsmap screenshot" title="Walking a route"></p>
+
+<p>You can configure your walking speed in the "Config -&gt; Set walking speed":</p>
+
+<p><img src="/doc/walking-speed.jpg" alt="gpsmap screenshot" title="Walking speed"></p>
+
+<p>Please note that if the "Animate -&gt; Pause at checkpoints" option is checked,
+the route will pause automatically each time you reach a control point:</p>
+
+<p><img src="/doc/walking-pause-checkpoint.jpg" alt="gpsmap screenshot" title="Pause at checkpoint"></p>
+
+<p>You can resume the route hitting the ENTER key. The "Pause at checkpoints"
+option is useful for resynchronizing your walking with the gpsmap walking :D</p>
+
+<p>Please note that the ENTER key is a "PAUSE/RESUME" key binding.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Gpsmap maintained by <a href="https://github.com/killabytenow">killabytenow</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
