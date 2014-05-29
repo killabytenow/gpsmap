@@ -39,16 +39,19 @@ def sex2dec(coords):
                 + "(?P<lod>[0-9]+)\s*[º°]\s*"   \
                 + "(?P<lom>[0-9]+)\s*'\s*"      \
                 + "(?P<los>[0-9]+(?:\.[0-9]*)?)\s*\"\s*" \
-                + "(?P<loo>[eEwW])"
+                + "(?P<loo>[eEwWOO])"
                 + "\s*$",
                  coords)
     if m is None:
         return (None, None)
+    lao = m.group("lao").upper()
+    loo = m.group("loo").upper()
+    if loo == "O": loo = "W" # spanish compatibility xDDD
 
     la = float(m.group("lad")) + float(m.group("lam")) / 60 + float(m.group("las")) / 3600
     lo = float(m.group("lod")) + float(m.group("lom")) / 60 + float(m.group("los")) / 3600
-    if m.group("lao").upper() == "S": a = a * -1.0
-    if m.group("loo").upper() == "W": l = l * -1.0
+    if lao == "S": la = la * -1.0
+    if loo == "W": lo = lo * -1.0
     return (la, lo)
 
 def dec2sex(la, lo):
