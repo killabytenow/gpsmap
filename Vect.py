@@ -43,6 +43,9 @@ def vmod(v):
 def vangle(a, b):
     return math.acos((a[0]*b[0] + a[1]*b[1]) / (vmod(a) * vmod(b)))
 
+def vangle2(a, b):
+    return math.atan2(b[1], b[0]) - math.atan2(a[1], a[0])
+
 def vstr(v):
     return "(%f, %f)" % (v[0], v[1])
 

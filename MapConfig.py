@@ -161,28 +161,38 @@ class MapConfig(object):
         if self.A is None or self.H is None or self.V is None:
             return
 
+        logging.info("ref(A) = %f, %f" % (self.A[1][0], self.A[1][1]))
+        logging.info("ref(H) = %f, %f" % (self.H[1][0], self.H[1][1]))
+        logging.info("ref(V) = %f, %f" % (self.V[1][0], self.V[1][1]))
+
         # do calculus (we have all needed data)
+        AH = Vect.vsub(self.H[1], self.A[1])
+        AV = Vect.vsub(self.V[1], self.A[1])
+        logging.info("vect(AH) = %f, %f" % (AH[0], AH[1]))
+        logging.info("vect(AV) = %f, %f" % (AV[0], AV[1]))
+
         # 1) Calculate angle between an horizontal vector and 'AH' vector
-        self.to = Vect.vangle(Vect.vsub(self.H[1], self.A[1]), Vect.vect(1, 0))
+        self.to = Vect.vangle2(AH, Vect.vect(1, 0))
         logging.info("angle(AH, (1,0)) = %f rad (%fº)" % (self.to, math.degrees(self.to)))
 
         # 2) Calculate 'raca' (angle between AH ^ AV)
-        self.raca = Vect.vangle(Vect.vsub(self.H[1], self.A[1]), Vect.vsub(self.V[1], self.A[1]))
+        self.raca = Vect.vangle(AH, AV)
         logging.info("angle(AH, AV) = %f" % math.degrees(self.raca))
 
-        # 2) calculate 'dflo' and 'dfla' factors (pixels to dec degrees)
-        logging.info("|ha|º  = %f" % Vect.vmod(Vect.vsub(self.H[1], self.A[1])))
+        # 3) calculate 'dflo' and 'dfla' factors (pixels to dec degrees)
+        logging.info("|ha|º  = %f" % Vect.vmod(AH))
         logging.info("|ha|px = %f" % Vect.vmod(Vect.vsub(self.H[0], self.A[0])))
-        logging.info("|va|º  = %f" % Vect.vmod(Vect.vsub(self.V[1], self.A[1])))
+        logging.info("|va|º  = %f" % Vect.vmod(AV))
         logging.info("|va|px = %f" % Vect.vmod(Vect.vsub(self.V[0], self.A[0])))
-        self.dflo = Vect.vmod(Vect.vsub(self.H[1], self.A[1])) \
+        self.dflo = Vect.vmod(AH) \
                   / Vect.vmod(Vect.vsub(self.H[0], self.A[0]))
-        self.dfla = Vect.vmod(Vect.vsub(self.V[1], self.A[1])) \
+        self.dfla = Vect.vmod(AV) \
                   / Vect.vmod(Vect.vsub(self.V[0], self.A[0]))
 
-
-        cri = Vect.vangle(Vect.vsub(self.H[0], self.A[0]), Vect.vsub(self.V[0], self.A[0]))
+        # 4) following printf should be always 90º
+        cri = Vect.vangle(Vect.vsub(self.V[0], self.A[0]), Vect.vsub(self.H[0], self.A[0]))
         logging.info("angle(ex, ey)   = %f" % math.degrees(cri))
+
         self.dflo = self.dflo * math.sin(self.raca)
         self.dfla = self.dfla * math.sin(self.raca)
 
