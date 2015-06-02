@@ -35,7 +35,7 @@ def sex2dec(coords):
                 + "(?P<lam>[0-9]+)\s*'\s*"      \
                 + "(?P<las>[0-9]+(?:\.[0-9]*)?)\s*\"\s*" \
                 + "(?P<lao>[nNsS])"
-                + "\s*,\s*"
+                + "(?:\s*,\s*|\s+)"
                 + "(?P<lod>[0-9]+)\s*[º°]\s*"   \
                 + "(?P<lom>[0-9]+)\s*'\s*"      \
                 + "(?P<los>[0-9]+(?:\.[0-9]*)?)\s*\"\s*" \
@@ -43,6 +43,7 @@ def sex2dec(coords):
                 + "\s*$",
                  coords)
     if m is None:
+        self.status("Cannot parse coordinates [%s]" % coords)
         return (None, None)
     lao = m.group("lao").upper()
     loo = m.group("loo").upper()
