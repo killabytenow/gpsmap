@@ -108,6 +108,7 @@ class Main(object):
              ('file.open',          gtk.STOCK_OPEN,       '_Open map',          '<Control>o', None,               self.open_dialog),
              ('file.save',          gtk.STOCK_SAVE,       '_Save map',          '<Control>s', None,               self.save),
              ('file.save_route',    "print-kml",          '_Save KML route',    None,         None,               self.route_save_kml),
+             ('file.mapshot',       "mapshot",            '_Save map shot',     None,         None,               self.save_mapshot),
              ('edit',               None,                 '_Edit'),
              ('edit.map_load',      None,                 '_Load map image',    None,         None,               self.map_load_dialog),
              ('edit.route_unset',   None,                 '_Reset route',       None,         None,               self.route_unset),
@@ -670,6 +671,31 @@ class Main(object):
 
         # load map
         self.mc.route_save_kml(filename)
+
+    def save_mapshot(self, action, data = None):
+        # open save file chooser
+        fc = gtk.FileChooserDialog(
+               action=gtk.FILE_CHOOSER_ACTION_SAVE,
+               buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+        filter = gtk.FileFilter()
+        filter.set_name("PNG file")
+        filter.add_pattern("*.png")
+        fc.add_filter(filter)
+        r = fc.run()
+
+        # fetch filename
+        filename = None
+        if r == gtk.RESPONSE_OK:
+            filename = fc.get_filename()
+        else:
+            logging.info("File chooser window puf")
+        fc.destroy()
+        if filename is None:
+            logging.info("File choosed is puf puf")
+            return None
+
+        # load map
+        self.mw.save_png(filename)
 
     def start(self):
         self.gpsdthread = GPSd.GPSdThread(self.mc)

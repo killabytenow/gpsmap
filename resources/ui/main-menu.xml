@@ -41,6 +41,7 @@
       <placeholder name="mb_file_recent_files" />
       <separator />
       <menuitem name="mb_file_save_route" action="file.save_route" />
+      <menuitem name="mb_file_save_mshot" action="file.mapshot" />
       <separator />
       <menuitem name="mb_file_quit" action="file.quit" />
     </menu>

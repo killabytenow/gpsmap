@@ -111,20 +111,7 @@ class MapWidget(gtk.DrawingArea):
             self.window.invalidate_rect(rect, True)
         return True
 
-    def do_expose_event(self, event):
-        if self.mc is None \
-        or self.mc.pixbuf is None:
-            self.set_size_request(0, 0)
-            return
-
-        # set widget size based on image map
-        self.set_size_request(self.mc.pixbuf.get_width(), self.mc.pixbuf.get_height())
-
-        # create cairo surface
-        cr = self.window.cairo_create()
-        cr.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
-        cr.clip()
-
+    def do_draw(self, cr, draw_curr_xy):
         # copy image background
         cr.set_source_pixbuf(self.mc.pixbuf, 0, 0)
         cr.paint()
@@ -277,7 +264,7 @@ class MapWidget(gtk.DrawingArea):
                 cr.stroke()
 
         # draw curr_xy
-        if self.mc.curr_xy is not None:
+        if self.mc.curr_xy is not None and draw_curr_xy:
             x, y = self.mc.curr_xy[0], self.mc.curr_xy[1]
             for i in range(1, 4):
                 cr.set_line_width(5 - i)
@@ -288,6 +275,23 @@ class MapWidget(gtk.DrawingArea):
             cr.arc(x, y, 2.5, 0, 2*math.pi)
             cr.fill()
             cr.stroke()
+
+    def do_expose_event(self, event):
+        if self.mc is None \
+        or self.mc.pixbuf is None:
+            self.set_size_request(0, 0)
+            return
+
+        # set widget size based on image map
+        self.set_size_request(self.mc.pixbuf.get_width(), self.mc.pixbuf.get_height())
+
+        # create cairo surface
+        cr = self.window.cairo_create()
+        cr.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
+        cr.clip()
+
+        self.do_draw(cr, True)
+
 
     def select_mode(self, mode, x = 0, y = 0):
         if mode is None:
@@ -303,4 +307,28 @@ class MapWidget(gtk.DrawingArea):
         self.select_x = x
         self.select_y = y
         self.redraw()
+
+    def save_png(self, path):
+        # get image dimensions
+        w = self.mc.pixbuf.get_width()
+        h = self.mc.pixbuf.get_height()
+
+        # create pixmap and cairo context
+        dw = gtk.gdk.Pixmap(None, w, h, 24)
+        dw.set_colormap(gtk.gdk.Colormap(gtk.gdk.Visual(24, gtk.gdk.VISUAL_TRUE_COLOR), False))
+        cr = dw.cairo_create()
+
+        # draw
+        self.do_draw(cr, False)
+        
+        # save to disk
+        pixbuf = gtk.gdk.Pixbuf(
+                    gtk.gdk.COLORSPACE_RGB,
+                    has_alpha=False,
+                    bits_per_sample=8,
+                    width=w,
+                    height=h)
+        pixbuf.get_from_drawable(dw, dw.get_colormap(), 0, 0, 0, 0, w, h)
+        pixbuf.save(path, "png", {})
+
 
