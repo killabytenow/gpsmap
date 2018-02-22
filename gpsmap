@@ -90,7 +90,8 @@ class Main(object):
                                 "edit"      : "edit.png",
                                 "ruler"     : "ruler.png",
                               }.iteritems():
-            icon_set = gtk.IconSet(gtk.gdk.pixbuf_new_from_file("resources/icons/%s" % filename))
+            icon_set = gtk.IconSet(gtk.gdk.pixbuf_new_from_file(
+								os.path.join(self.binpath, "resources", "icons", filename)))
             icon_fact.add(name, icon_set)
         icon_fact.add_default()
 
@@ -156,8 +157,8 @@ class Main(object):
         ui_manager.insert_action_group(action_group, 0)
 
         # create menu and accelerator group
-        ui_manager.add_ui_from_file("%s/resources/ui/main-menu.xml" % self.binpath)
-        ui_manager.add_ui_from_file("%s/resources/ui/context-menu.xml" % self.binpath)
+        ui_manager.add_ui_from_file(os.path.join(self.binpath, "resources", "ui", "main-menu.xml"))
+        ui_manager.add_ui_from_file(os.path.join(self.binpath, "resources", "ui", "context-menu.xml"))
         self.__w_mapmenu = ui_manager.get_widget("/mapmenu")
         menubar = ui_manager.get_widget("/menubar")
 
@@ -714,7 +715,7 @@ class Main(object):
         about.set_version("1.0")
         about.set_copyright("(c) 2014 Gerardo García Peña")
         about.set_comments("GPSmap Emulator")
-        about.set_logo(gtk.gdk.pixbuf_new_from_file("resources/logo.jpg"))
+        about.set_logo(gtk.gdk.pixbuf_new_from_file(os.path.join(self.binpath, "resources", "logo.jpg")))
         about.run()
         about.destroy()
 

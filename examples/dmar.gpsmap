@@ -96,7 +96,7 @@
         ]
     ], 
     "imgpath": "./examples/dmar.png", 
-    "walk_speed": 4000, 
+    "walk_speed": 7000, 
     "V": {
         "xy": [
             93.0, 

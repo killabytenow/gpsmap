@@ -28,6 +28,7 @@
 
 import pygtk
 pygtk.require('2.0')
+import cairo
 import gtk
 import json
 import logging
@@ -48,30 +49,34 @@ class MapConfig(object):
     walk_speed = None
 
     # calculated properties
-    to       = None
-    raca     = None
-    dflo     = None
-    dfla     = None
-    pixbuf   = None
-    curr_pos = None
-    curr_xy  = None
+    to         = None
+    raca       = None
+    dflo       = None
+    dfla       = None
+    bg_surface = None
+    bg_w       = None
+    bg_h       = None
+    curr_pos   = None
+    curr_xy    = None
 
     def __init__(self):
         self.reset()
 
     def reset(self):
-        self.route    = [ ]
-        self.points   = { }
-        self.filename = None
-        self.imgpath  = None
-        self.A        = None
-        self.H        = None
-        self.V        = None
-        self.to       = None
-        self.raca     = None
-        self.dflo     = None
-        self.dfla     = None
-        self.pixbuf   = None
+        self.route      = [ ]
+        self.points     = { }
+        self.filename   = None
+        self.imgpath    = None
+        self.A          = None
+        self.H          = None
+        self.V          = None
+        self.to         = None
+        self.raca       = None
+        self.dflo       = None
+        self.dfla       = None
+        self.bg_surface = None
+        self.bg_w       = None
+        self.bg_h       = None
         self.walk_speed = 4000  # humans with laptop walk at 4km/h
 
     def json_read(self, config):
@@ -125,7 +130,22 @@ class MapConfig(object):
     def map_load(self, mapfile):
         logging.info("Loading map image '%s'." % mapfile)
         self.imgpath = mapfile
-        self.pixbuf = gtk.gdk.pixbuf_new_from_file(mapfile)
+
+        # load image using gtk.gdk
+        pixbuf = gtk.gdk.pixbuf_new_from_file(mapfile)
+
+        # convert image to a standard cairo surface
+        # (to avoid dependency on pixbuf)
+        self.bg_w = pixbuf.get_width()
+        self.bg_h = pixbuf.get_height()
+        self.bg_surface = cairo.ImageSurface(
+                            cairo.FORMAT_ARGB32,
+                            self.bg_w,
+                            self.bg_h)
+        cr = cairo.Context(self.bg_surface)
+        gdkcr = gtk.gdk.CairoContext(cr)
+        gdkcr.set_source_pixbuf(pixbuf, 0, 0)
+        gdkcr.paint()
 
     def map_unset(self):
         logging.info("Unset map image.")

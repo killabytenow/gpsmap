@@ -113,11 +113,11 @@ class MapWidget(gtk.DrawingArea):
 
     def do_draw(self, cr, draw_curr_xy):
         # copy image background
-        cr.set_source_pixbuf(self.mc.pixbuf, 0, 0)
+        cr.set_source_surface(self.mc.bg_surface, 0, 0)
         cr.paint()
         if self.visible["background"] != 2:
             cr.set_source_rgba(0, 0, 0, .5 if self.visible["background"] == 1 else .9)
-            cr.rectangle(0, 0, self.mc.pixbuf.get_width() - 1, self.mc.pixbuf.get_height() - 1)
+            cr.rectangle(0, 0, self.mc.bg_w - 1, self.mc.bg_h - 1)
             cr.fill()
             cr.stroke()
 
@@ -185,23 +185,23 @@ class MapWidget(gtk.DrawingArea):
                 cr.set_source_rgba(0, 0, 0, 1)
                 cr.set_line_width(1)
                 cr.move_to(0, self.select_y + 1)
-                cr.line_to(self.mc.pixbuf.get_width(), self.select_y + 1)
+                cr.line_to(self.mc.bg_w, self.select_y + 1)
                 cr.stroke()
                 cr.set_source_rgba(1, 1, 0, 0.7)
                 cr.set_line_width(3)
                 cr.move_to(0, self.select_y)
-                cr.line_to(self.mc.pixbuf.get_width(), self.select_y)
+                cr.line_to(self.mc.bg_w, self.select_y)
                 cr.stroke()
             if self.select_m == "V" or self.select_m == "A":
                 cr.set_source_rgba(0, 0, 0, 1)
                 cr.set_line_width(1)
                 cr.move_to(self.select_x + 1, 0)
-                cr.line_to(self.select_x + 1, self.mc.pixbuf.get_height())
+                cr.line_to(self.select_x + 1, self.mc.bg_h)
                 cr.stroke()
                 cr.set_source_rgba(1, 1, 0, 0.7)
                 cr.set_line_width(3)
                 cr.move_to(self.select_x, 0)
-                cr.line_to(self.select_x, self.mc.pixbuf.get_height())
+                cr.line_to(self.select_x, self.mc.bg_h)
                 cr.stroke()
             if self.select_m == "P":
                 cr.set_source_rgba(0, 0, 1, .4)
@@ -278,12 +278,12 @@ class MapWidget(gtk.DrawingArea):
 
     def do_expose_event(self, event):
         if self.mc is None \
-        or self.mc.pixbuf is None:
+        or self.mc.bg_surface is None:
             self.set_size_request(0, 0)
             return
 
         # set widget size based on image map
-        self.set_size_request(self.mc.pixbuf.get_width(), self.mc.pixbuf.get_height())
+        self.set_size_request(self.mc.bg_w, self.mc.bg_h)
 
         # create cairo surface
         cr = self.window.cairo_create()
@@ -309,26 +309,14 @@ class MapWidget(gtk.DrawingArea):
         self.redraw()
 
     def save_png(self, path):
-        # get image dimensions
-        w = self.mc.pixbuf.get_width()
-        h = self.mc.pixbuf.get_height()
+        logging.info("\t%s: Saving image (%d, %d) pixels" % (path, self.mc.bg_w, self.mc.bg_h))
+        logging.info("\t%s: Creating cairo context and surface" % (path))
+        dst_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.mc.bg_w, self.mc.bg_h)
+        dst_ctx = cairo.Context(dst_surface)
 
-        # create pixmap and cairo context
-        dw = gtk.gdk.Pixmap(None, w, h, 24)
-        dw.set_colormap(gtk.gdk.Colormap(gtk.gdk.Visual(24, gtk.gdk.VISUAL_TRUE_COLOR), False))
-        cr = dw.cairo_create()
+        logging.info("\t%s: drawing" % (path))
+        self.do_draw(dst_ctx, False)
 
-        # draw
-        self.do_draw(cr, False)
-        
-        # save to disk
-        pixbuf = gtk.gdk.Pixbuf(
-                    gtk.gdk.COLORSPACE_RGB,
-                    has_alpha=False,
-                    bits_per_sample=8,
-                    width=w,
-                    height=h)
-        pixbuf.get_from_drawable(dw, dw.get_colormap(), 0, 0, 0, 0, w, h)
-        pixbuf.save(path, "png", {})
-
+        logging.info("\t%s: writing" % (path))
+        dst_surface.write_to_png(path)
 
